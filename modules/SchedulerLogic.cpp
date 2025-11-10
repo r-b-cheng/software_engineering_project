@@ -41,7 +41,10 @@ std::vector<TimeSlot> SchedulerLogic::findAvailableSlots(
         }
         // 仅将时长大于0的空闲段加入结果
         for (const auto& slot : slots) {
-            if (slot.getEndTime() > slot.getStartTime()) {
+            auto start = slot.getStartTime();
+            auto end = slot.getEndTime();
+        
+            if (end > start) {
                 availableSlots.push_back(slot);
             }
         }
