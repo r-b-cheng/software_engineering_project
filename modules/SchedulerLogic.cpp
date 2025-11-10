@@ -45,18 +45,8 @@ std::vector<TimeSlot> SchedulerLogic::findAvailableSlots(
         // 仅将时长大于0的空闲段加入结果
         for (const auto& slot : slots) {
             if (slot.durationMinutes() > 0) {
-                auto roundToHour = [](std::chrono::system_clock::time_point tp) {
-                    std::time_t t = std::chrono::system_clock::to_time_t(tp);
-                    struct tm* timeinfo = std::localtime(&t);
-                    timeinfo->tm_min = 0;
-                    timeinfo->tm_sec = 0;
-                    return std::chrono::system_clock::from_time_t(std::mktime(timeinfo));
-                };
-                auto slotStart = roundToHour(slot.getStartTime());
-                auto slotEnd = roundToHour(slot.getEndTime());
-                if (std::chrono::duration_cast<std::chrono::minutes>(slotEnd - slotStart).count() > 0) {
-                    availableSlots.emplace_back(slotStart, slotEnd);
-                }
+                // 不做 roundToHour，直接加入真实空闲段
+                availableSlots.push_back(slot);
             }
         }
     }
