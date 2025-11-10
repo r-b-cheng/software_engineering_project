@@ -1,37 +1,51 @@
 #include "SchedulerLogic.h"
 #include <algorithm>
 
+// 计算学生和教师办公时间的可用空闲时间段
 std::vector<TimeSlot> SchedulerLogic::findAvailableSlots(
     const Schedule& studentSchedule,
     const Schedule& officeHour) {
-    
+
     std::vector<TimeSlot> availableSlots;
-    
-    // 获取老师的所有办公时间
+    // 获取教师办公时间和学生个人日程的所有事件
     const auto& officeEvents = officeHour.getAllEvents();
+    const auto& studentEvents = studentSchedule.getAllEvents();
     
+    // 遍历每个教师办公时间事件
     for (const auto& officeEvent : officeEvents) {
-        TimeSlot officeSlot = officeEvent.getTimeSlot();
-        bool hasConflict = false;
-        
-        // 检查该办公时间是否与学生日程冲突
-        const auto& studentEvents = studentSchedule.getAllEvents();
-        
+        // 初始可用段为当前办公时间段
+        std::vector<TimeSlot> slots = { officeEvent.getTimeSlot() };
+        // 依次排除学生日程中的冲突时间段
         for (const auto& studentEvent : studentEvents) {
-            TimeSlot studentSlot = studentEvent.getTimeSlot();
-            
-            if (officeSlot.isOverlappingWith(studentSlot)) {
-                hasConflict = true;
-                break;
+            std::vector<TimeSlot> newSlots;
+            for (const auto& slot : slots) {
+                TimeSlot studentSlot = studentEvent.getTimeSlot();
+                // 判断是否有重叠
+                if (slot.isOverlappingWith(studentSlot)) {
+                    // 学生事件开始前的空闲段
+                    if (studentSlot.getStartTime() > slot.getStartTime()) {
+                        newSlots.push_back(TimeSlot(slot.getStartTime(), studentSlot.getStartTime(), false));
+                    }
+                    // 学生事件结束后的空闲段
+                    if (studentSlot.getEndTime() < slot.getEndTime()) {
+                        newSlots.push_back(TimeSlot(studentSlot.getEndTime(), slot.getEndTime(), false));
+                    }
+                } else {
+                    // 无重叠则保留原空闲段
+                    newSlots.push_back(slot);
+                }
+            }
+            slots = newSlots;
+            // 若已无可用空闲段则提前结束
+            if (slots.empty()) break;
+        }
+        // 仅将时长大于0的空闲段加入结果
+        for (const auto& slot : slots) {
+            if (slot.getEndTime() > slot.getStartTime()) {
+                availableSlots.push_back(slot);
             }
         }
-        
-        // 如果没有冲突，添加到可用时间段
-        if (!hasConflict) {
-            availableSlots.push_back(officeSlot);
-        }
     }
-    
     return availableSlots;
 }
 
