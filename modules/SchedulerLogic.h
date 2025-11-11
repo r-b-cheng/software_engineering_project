@@ -7,10 +7,10 @@
 
 class SchedulerLogic {
 public:
-    // 计算学生和老师之间的可用时间段
     static std::vector<TimeSlot> findAvailableSlots(
         const Schedule& studentSchedule,
-        const Schedule& officeHour);
+        const Schedule& officeHour,
+        int weekOffset);
 };
 
 #endif // SCHEDULERLOGIC_H

@@ -41,6 +41,11 @@ public:
     
     // 清空所有事件
     void clear();
+
+    //返回指定周的事件副本（课程按周归一化，个人日程仅该周）  
+    //因为老师的office hour在导入时iscourse都为true 所以会直接将所有的officetime都归一化到这一周
+    std::vector<ScheduleEvent> getEventsForWeekCopy(int weekOffset) const;
+
 };
 
 #endif // SCHEDULE_H

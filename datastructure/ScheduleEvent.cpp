@@ -69,10 +69,16 @@ int ScheduleEvent::getWeekOffset() const {
     // 获取事件的时间点
     auto eventTime = timeSlot.getStartTime();
     std::time_t eventTt = std::chrono::system_clock::to_time_t(eventTime);
-    std::tm* eventTm = std::localtime(&eventTt);
+    // 安全地复制 localtime 结果，避免静态缓冲区被覆盖
+    std::tm eventTm{};
+    if (auto p = std::localtime(&eventTt)) {
+        eventTm = *p;
+    } else if (auto pg = std::gmtime(&eventTt)) { // 罕见情况下的回退
+        eventTm = *pg;
+    }
     
     // 转换为日期对象以便计算
-    QDate eventDate(eventTm->tm_year + 1900, eventTm->tm_mon + 1, eventTm->tm_mday);
+    QDate eventDate(eventTm.tm_year + 1900, eventTm.tm_mon + 1, eventTm.tm_mday);
     
     // 计算事件日期所在周的周一
     int eventDaysToMonday = eventDate.dayOfWeek() - 1;
@@ -81,8 +87,13 @@ int ScheduleEvent::getWeekOffset() const {
     // 获取当前时间
     auto now = std::chrono::system_clock::now();
     std::time_t nowTt = std::chrono::system_clock::to_time_t(now);
-    std::tm* nowTm = std::localtime(&nowTt);
-    QDate nowDate(nowTm->tm_year + 1900, nowTm->tm_mon + 1, nowTm->tm_mday);
+    std::tm nowTm{};
+    if (auto p2 = std::localtime(&nowTt)) {
+        nowTm = *p2;
+    } else if (auto p2g = std::gmtime(&nowTt)) { // 罕见情况下的回退
+        nowTm = *p2g;
+    }
+    QDate nowDate(nowTm.tm_year + 1900, nowTm.tm_mon + 1, nowTm.tm_mday);
     
     // 计算当前日期所在周的周一
     int daysToMonday = nowDate.dayOfWeek() - 1;  // Qt中周一=1

@@ -232,11 +232,15 @@ void MainWindow::on_calculateBtn_clicked() {
         // 合并学生的课程和个人日程
         Schedule studentSchedule = dataManager.getUser().getCourses() +
                                   dataManager.getUser().getPersonalSchedule();
+
+        // 取当前周偏移（来自 ScheduleView）
+        int weekOffset = ui->scheduleView->getCurrentWeekOffset();
         
-        // 计算可用时间段
+        // 计算可用时间段（集中使用数据层的周过滤/归一化）
         std::vector<TimeSlot> availableSlots = SchedulerLogic::findAvailableSlots(
             studentSchedule,
-            prof.getOfficeHours()
+            prof.getOfficeHours(),
+            weekOffset
         );
 
         // 显示结果
