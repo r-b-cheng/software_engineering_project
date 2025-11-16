@@ -2,6 +2,7 @@
 #include "ui_MainWindow.h"
 #include "../modules/FileParser.h"
 #include "../modules/SchedulerLogic.h"
+#include "SettingsDialog.h"
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QFileInfo>
@@ -102,6 +103,9 @@ void MainWindow::on_addEventBtn_clicked() {
         }
         
         if (success) {
+            if (ui->autoJumpAction->isChecked()) {
+                ui->scheduleView->setWeekOffset(event.getWeekOffset());
+            }
             updateScheduleView();
             saveData();
             QMessageBox::information(this, QString::fromUtf8("添加成功"), 
@@ -264,6 +268,16 @@ void MainWindow::on_exitAction_triggered() {
 
 void MainWindow::on_showScheduleAction_triggered() {
     updateScheduleView();
+}
+
+void MainWindow::on_settingsAction_triggered() {
+    SettingsDialog dialog(this);
+    dialog.setAutoJumpChecked(ui->autoJumpAction->isChecked());
+    if (dialog.exec() == QDialog::Accepted) {
+        bool checked = dialog.getAutoJumpChecked();
+        ui->autoJumpAction->setChecked(checked);
+        ui->statusbar->showMessage(QString::fromUtf8("设置已更新"), 3000);
+    }
 }
 
 

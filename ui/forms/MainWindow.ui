@@ -69,14 +69,15 @@
     <addaction name="separator"/>
     <addaction name="exitAction"/>
    </widget>
-   <widget class="QMenu" name="editMenu">
-    <property name="title">
-     <string>编辑</string>
-    </property>
-    <addaction name="addEventAction"/>
-    <addaction name="importProfessorAction"/>
-    <addaction name="importStudentCoursesAction"/>
-   </widget>
+  <widget class="QMenu" name="editMenu">
+   <property name="title">
+    <string>编辑</string>
+   </property>
+   <addaction name="addEventAction"/>
+   <addaction name="importProfessorAction"/>
+   <addaction name="importStudentCoursesAction"/>
+   <addaction name="autoJumpAction"/>
+  </widget>
    <addaction name="fileMenu"/>
    <addaction name="editMenu"/>
   </widget>
@@ -97,6 +98,7 @@
    <addaction name="calculateAction"/>
    <addaction name="separator"/>
    <addaction name="saveDataAction"/>
+   <addaction name="settingsAction"/>
   </widget>
   <action name="loadDataAction">
    <property name="text">
@@ -126,6 +128,22 @@
   <action name="importStudentCoursesAction">
    <property name="text">
     <string>导入学生课程</string>
+   </property>
+  </action>
+  <action name="settingsAction">
+   <property name="text">
+    <string>设置</string>
+   </property>
+  </action>
+  <action name="autoJumpAction">
+   <property name="text">
+    <string>自动跳转到事件所在周</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
    </property>
   </action>
   <action name="showScheduleAction">
@@ -317,6 +335,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>settingsAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>on_settingsAction_triggered()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>on_addEventBtn_clicked()</slot>
@@ -327,6 +361,7 @@
   <slot>on_saveDataBtn_clicked()</slot>
   <slot>on_exitAction_triggered()</slot>
   <slot>on_showScheduleAction_triggered()</slot>
+  <slot>on_settingsAction_triggered()</slot>
   <slot>onWeekChanged(int)</slot>
   <slot>onEventDoubleClicked(int)</slot>
  </slots>
