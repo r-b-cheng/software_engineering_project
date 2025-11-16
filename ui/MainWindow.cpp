@@ -289,7 +289,7 @@ void MainWindow::showEventDetails(int eventId) {
     // 查找事件
     ScheduleEvent* foundEvent = nullptr;
     
-    for (auto& event : dataManager.getUser().getCourses().getAllEvents()) {
+    for (auto& event : dataManager.getUser().getCourses().getEventsForWeekCopy(ui->scheduleView->getCurrentWeekOffset())) {
         if (event.getId() == eventId) {
             foundEvent = const_cast<ScheduleEvent*>(&event);
             break;

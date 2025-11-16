@@ -19,9 +19,9 @@ QString ImportProfessorDialog::getFilePath() const {
 void ImportProfessorDialog::onBrowseClicked() {
     QString fileName = QFileDialog::getOpenFileName(
         this,
-        QString::fromUtf8("选择CSV文件"),
-        "",
-        "CSV Files (*.csv);;All Files (*)"
+        QString::fromUtf8("选择教师CSV文件"),
+        QString(),
+        QString::fromUtf8("CSV文件 (*.csv);;所有文件 (*.*)")
     );
 
     if (!fileName.isEmpty()) {

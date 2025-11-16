@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>150</height>
+    <height>200</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,6 +30,9 @@
       <layout class="QHBoxLayout" name="fileLayout">
        <item>
         <widget class="QLineEdit" name="filePathEdit">
+         <property name="placeholderText">
+          <string>请选择CSV文件...</string>
+         </property>
          <property name="readOnly">
           <bool>true</bool>
          </property>
@@ -47,11 +50,25 @@
     </layout>
    </item>
    <item>
+    <widget class="QLabel" name="infoLabel">
+     <property name="text">
+      <string>CSV文件格式：ProfessorName,Email,EventName,Location,Description,Weekday,StartTime,EndTime
+时间格式：YYYY-MM-DD HH:MM；</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="styleSheet">
+      <string>color: gray; font-size: 10px;</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="buttonLayout">
      <item>
       <widget class="QPushButton" name="okButton">
        <property name="text">
-        <string>确定</string>
+        <string>导入</string>
        </property>
       </widget>
      </item>

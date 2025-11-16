@@ -9,7 +9,7 @@ static std::chrono::system_clock::time_point roundSecondsToZero(const std::chron
     std::time_t floored = (tt / 60) * 60; // 去除秒部分
     return std::chrono::system_clock::from_time_t(floored);
 }
-//按周偏移进行可用时间计算
+//按周偏移进行可用时间计算  小于30分钟不计入
 std::vector<TimeSlot> SchedulerLogic::findAvailableSlots(
     const Schedule& studentSchedule,
     const Schedule& officeHour,
@@ -52,7 +52,7 @@ std::vector<TimeSlot> SchedulerLogic::findAvailableSlots(
             if (slots.empty()) break;
         }
         for (const auto& slot : slots) {
-            if (slot.durationMinutes() > 30) {  // 忽略时长小于30分钟的空闲时间
+            if (slot.durationMinutes() >= 30) {  // 忽略时长小于30分钟的空闲时间
                 availableSlots.push_back(slot);
             }
         }
