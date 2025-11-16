@@ -63,7 +63,7 @@ QMAKE_CXXFLAGS += -std=c++17
 
 # Windows特定配置
 win32 {
-    # RC_ICONS = icon.ico
+    exists(icon.ico): RC_ICONS = icon.ico
 }
 
 # macOS特定配置
@@ -75,4 +75,6 @@ macx {
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += resources.qrc
 

@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QIcon>
 #include "ui/MainWindow.h"
 
 // Qt 5 需要 QTextCodec 设置编码，Qt 6 默认使用 UTF-8
@@ -19,8 +20,11 @@ int main(int argc, char *argv[]) {
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
     #endif
     
+    app.setWindowIcon(QIcon(":/icons/icon.png"));
+
     // 创建并显示主窗口
     MainWindow mainWindow;
+    mainWindow.setWindowIcon(QIcon(":/icons/icon.png"));
     mainWindow.show();
     
     return app.exec();
