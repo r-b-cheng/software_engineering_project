@@ -188,6 +188,27 @@ Professor DataManager::getProfessorByName(const std::string& name) const {
     return Professor();
 }
 
+// 导入或合并教师数据：按姓名合并，存在替换，不存在追加
+bool DataManager::importOrMergeProfessors(const std::vector<Professor>& profs) {
+    bool changed = false;
+    for (const auto& prof : profs) {
+        bool found = false;
+        for (auto& existing : professors) {
+            if (existing.getName() == prof.getName()) {
+                existing = prof; // 已存在则整体替换
+                found = true;
+                changed = true;
+                break;
+            }
+        }
+        if (!found) {
+            professors.push_back(prof); // 不存在则追加
+            changed = true;
+        }
+    }
+    return changed;
+}
+
 bool DataManager::saveProfessorsData(const std::vector<Professor>& profs,
                                     const std::string& filePath) {
     std::ofstream file(filePath);

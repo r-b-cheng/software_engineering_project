@@ -180,31 +180,13 @@ void MainWindow::on_importProfessorBtn_clicked() {
                     return;
                 }
                 
-                // 合并导入的教师数据（去掉 const_cast ，改为本地合并 + saveProfessorsData + loadProfessorsData）
-                std::vector<Professor> merged = dataManager.getProfessors();
-                for (const auto& prof : professors) {
-                    bool found = false;
-                    for (auto& existing : merged) {
-                        if (existing.getName() == prof.getName()) {
-                            existing = prof;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        merged.push_back(prof);
-                    }
+            
+                // 合并：按姓名合并，返回值表示是否发生变更
+                bool changed = dataManager.importOrMergeProfessors(professors);
+                // 调用 saveData 保存教师数据到 data_storage
+                if (changed) {
+                    saveData();
                 }
-
-                // 通过 DataManager 现有保存/加载接口更新内部状态
-                if (!dataManager.saveProfessorsData(merged, professorDataPath.toStdString())) {
-                    QMessageBox::warning(this, QString::fromUtf8("保存失败"),
-                                         QString::fromUtf8("无法写入教师数据文件"));
-                    return;
-                }
-                dataManager.loadProfessorsData(professorDataPath.toStdString());
-                saveData();
-                
             } catch (const std::exception& e) {
                 QMessageBox::critical(this, QString::fromUtf8("导入错误"),
                                     QString::fromUtf8("导入失败: %1").arg(e.what()));

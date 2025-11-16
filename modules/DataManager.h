@@ -33,6 +33,9 @@ public:
     // 根据姓名获取教师信息
     Professor getProfessorByName(const std::string& name) const;
     
+    // 导入或合并教师数据
+    bool importOrMergeProfessors(const std::vector<Professor>& profs);
+    
     // 保存教师信息
     bool saveProfessorsData(const std::vector<Professor>& profs, const std::string& filePath);
 };
