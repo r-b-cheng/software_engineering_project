@@ -2,6 +2,7 @@
 #include "ui_MainWindow.h"
 #include "../modules/FileParser.h"
 #include "../modules/SchedulerLogic.h"
+#include "SettingsDialog.h"
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QFileInfo>
@@ -102,6 +103,9 @@ void MainWindow::on_addEventBtn_clicked() {
         }
         
         if (success) {
+            if (ui->autoJumpAction->isChecked()) {
+                ui->scheduleView->setWeekOffset(event.getWeekOffset());
+            }
             updateScheduleView();
             saveData();
             QMessageBox::information(this, QString::fromUtf8("添加成功"), 
@@ -180,23 +184,13 @@ void MainWindow::on_importProfessorBtn_clicked() {
                     return;
                 }
                 
-                // 合并导入的教师数据
-                for (const auto& prof : professors) {
-                    bool found = false;
-                    for (auto& existingProf : const_cast<std::vector<Professor>&>(dataManager.getProfessors())) {
-                        if (existingProf.getName() == prof.getName()) {
-                            existingProf = prof;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        const_cast<std::vector<Professor>&>(dataManager.getProfessors()).push_back(prof);
-                    }
+            
+                // 合并：按姓名合并，返回值表示是否发生变更
+                bool changed = dataManager.importOrMergeProfessors(professors);
+                // 调用 saveData 保存教师数据到 data_storage
+                if (changed) {
+                    saveData();
                 }
-                
-                saveData();
-                
             } catch (const std::exception& e) {
                 QMessageBox::critical(this, QString::fromUtf8("导入错误"),
                                     QString::fromUtf8("导入失败: %1").arg(e.what()));
@@ -276,6 +270,16 @@ void MainWindow::on_showScheduleAction_triggered() {
     updateScheduleView();
 }
 
+void MainWindow::on_settingsAction_triggered() {
+    SettingsDialog dialog(this);
+    dialog.setAutoJumpChecked(ui->autoJumpAction->isChecked());
+    if (dialog.exec() == QDialog::Accepted) {
+        bool checked = dialog.getAutoJumpChecked();
+        ui->autoJumpAction->setChecked(checked);
+        ui->statusbar->showMessage(QString::fromUtf8("设置已更新"), 3000);
+    }
+}
+
 
 void MainWindow::onWeekChanged(int offset) {
     updateScheduleView();
@@ -289,7 +293,7 @@ void MainWindow::showEventDetails(int eventId) {
     // 查找事件
     ScheduleEvent* foundEvent = nullptr;
     
-    for (auto& event : dataManager.getUser().getCourses().getAllEvents()) {
+    for (auto& event : dataManager.getUser().getCourses().getEventsForWeekCopy(ui->scheduleView->getCurrentWeekOffset())) {
         if (event.getId() == eventId) {
             foundEvent = const_cast<ScheduleEvent*>(&event);
             break;

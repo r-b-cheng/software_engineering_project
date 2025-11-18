@@ -32,6 +32,7 @@ private slots:
     void on_saveDataBtn_clicked();
     void on_exitAction_triggered();
     void on_showScheduleAction_triggered();
+    void on_settingsAction_triggered();
     
     // ScheduleView 相关槽函数（需要手动连接，因为是自定义信号）
     void onWeekChanged(int offset);

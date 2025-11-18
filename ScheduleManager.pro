@@ -28,6 +28,7 @@ SOURCES += \
     ui/AddEventDialog.cpp \
     ui/ImportProfessorDialog.cpp \
     ui/ImportStudentCoursesDialog.cpp \
+    ui/SettingsDialog.cpp \
     ui/ResultDisplayWidget.cpp
 
 # 头文件
@@ -45,6 +46,7 @@ HEADERS += \
     ui/AddEventDialog.h \
     ui/ImportProfessorDialog.h \
     ui/ImportStudentCoursesDialog.h \
+    ui/SettingsDialog.h \
     ui/ResultDisplayWidget.h
 
 # UI 文件
@@ -53,6 +55,7 @@ FORMS += \
     ui/forms/AddEventDialog.ui \
     ui/forms/ImportProfessorDialog.ui \
     ui/forms/ImportStudentCoursesDialog.ui \
+    ui/forms/SettingsDialog.ui \
     ui/forms/ResultDisplayWidget.ui
 
 # 包含路径
@@ -63,7 +66,7 @@ QMAKE_CXXFLAGS += -std=c++17
 
 # Windows特定配置
 win32 {
-    # RC_ICONS = icon.ico
+    exists(icon.ico): RC_ICONS = icon.ico
 }
 
 # macOS特定配置
@@ -75,4 +78,6 @@ macx {
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += resources.qrc
 
