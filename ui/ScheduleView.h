@@ -21,17 +21,25 @@ private:
     QPushButton* prevWeekButton;
     QPushButton* nextWeekButton;
     QLabel* weekLabel;
+    QLabel* hoverLabel;
     int currentWeekOffset;
     
     std::vector<ScheduleEvent> currentEvents;
     std::vector<std::vector<bool>> occupiedSlots;
+    bool dragSelecting;
+    QDateTime dragStartTime;
+    int dragStartSlot;
+    int dragStartColumn;
 
     void setupUI();
     void updateWeekLabel();
     QStringList getWeekHeaders();
     QDate getDateForColumn(int column) const;
-    void processSelectionRelease();
-    bool tryBuildSelectionRange(QDateTime& start, QDateTime& end) const;
+    void beginSelection(const QPoint& pos);
+    void finalizeSelection(const QPoint& pos);
+    void updateHoverIndicator(const QPoint& pos, bool forceHide = false);
+    bool computeTimeAtPosition(const QPoint& pos, QDateTime& time, int& slot, int& column) const;
+    bool isRangeAvailable(int column, int startSlot, int endSlot) const;
 
 public:
     explicit ScheduleView(QWidget* parent = nullptr);
