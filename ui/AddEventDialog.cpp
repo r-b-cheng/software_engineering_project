@@ -76,3 +76,15 @@ void AddEventDialog::clear() {
     ui->endTimeEdit->setDateTime(QDateTime::currentDateTime().addSecs(3600));
     ui->isCourseCheck->setChecked(false);
 }
+
+void AddEventDialog::presetTimeRange(const QDateTime& start, const QDateTime& end) {
+    QDateTime startTime = start.isValid() ? start : QDateTime::currentDateTime();
+    QDateTime endTime = end.isValid() ? end : startTime.addSecs(3600);
+    
+    if (endTime <= startTime) {
+        endTime = startTime.addSecs(3600);
+    }
+    
+    ui->startTimeEdit->setDateTime(startTime);
+    ui->endTimeEdit->setDateTime(endTime);
+}

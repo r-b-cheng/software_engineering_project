@@ -38,6 +38,7 @@ private slots:
     void onWeekChanged(int offset);
     void onEventDoubleClicked(int eventId);
     void onDeleteEventRequested(int eventId);
+    void onCreateEventFromSelection(const QDateTime& start, const QDateTime& end);
 
 private:
     Ui::MainWindow *ui;
@@ -55,6 +56,7 @@ private:
     void saveData();
     void updateScheduleView();
     void showEventDetails(int eventId);
+    void processNewEvent(ScheduleEvent event);
 };
 
 #endif // MAINWINDOW_H

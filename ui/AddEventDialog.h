@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include "../datastructure/ScheduleEvent.h"
+#include <QDateTime>
 
 namespace Ui {
 class AddEventDialog;
@@ -18,6 +19,7 @@ public:
     ScheduleEvent getEvent() const;
     void setEvent(const ScheduleEvent& event);
     void clear();
+    void presetTimeRange(const QDateTime& start, const QDateTime& end);
 
 private:
     Ui::AddEventDialog *ui;

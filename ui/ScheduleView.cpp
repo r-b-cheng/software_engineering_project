@@ -5,12 +5,15 @@
 #include <QDebug>
 #include <QMenu>
 #include <QAction>
+#include <QTime>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <QMouseEvent>
+#include <algorithm>
 
 ScheduleView::ScheduleView(QWidget* parent)
-    : QWidget(parent), currentWeekOffset(0) {
+    : QWidget(parent), currentWeekOffset(0), occupiedSlots(24, std::vector<bool>(8, false)) {
     setupUI();
 }
 
@@ -54,6 +57,10 @@ void ScheduleView::setupUI() {
     }
 
     tableView->setModel(model);
+    tableView->setSelectionMode(QAbstractItemView::ContiguousSelection);
+    tableView->setSelectionBehavior(QAbstractItemView::SelectItems);
+    tableView->setMouseTracking(true);
+    tableView->viewport()->installEventFilter(this);
     tableView->horizontalHeader()->setStretchLastSection(false);
     tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     tableView->verticalHeader()->setVisible(false);
@@ -113,6 +120,9 @@ void ScheduleView::setSchedule(const std::vector<ScheduleEvent>& events) {
             model->setItem(row, col, new QStandardItem(""));
         }
     }
+    for (auto& rowSlots : occupiedSlots) {
+        std::fill(rowSlots.begin(), rowSlots.end(), false);
+    }
     
     // 重置所有合并的单元格
     tableView->clearSpans();
@@ -163,6 +173,11 @@ void ScheduleView::setSchedule(const std::vector<ScheduleEvent>& events) {
         }
 
         model->setItem(startHour, weekday, item);
+        for (int span = 0; span < durationHours && (startHour + span) < 24; ++span) {
+            if (weekday < static_cast<int>(occupiedSlots[startHour + span].size())) {
+                occupiedSlots[startHour + span][weekday] = true;
+            }
+        }
         
         // 合并单元格：使用精确计算的持续时间
         if (durationHours > 1) {
@@ -242,5 +257,94 @@ void ScheduleView::onContextMenuRequested(const QPoint& pos) {
     if (selectedAction == deleteAction) {
         emit deleteEventRequested(eventId);
     }
+}
+
+QDate ScheduleView::getDateForColumn(int column) const {
+    if (column < 1 || column > 7) {
+        return {};
+    }
+
+    QDate today = QDate::currentDate();
+    int daysToMonday = today.dayOfWeek() - 1;
+    QDate weekStart = today.addDays(-daysToMonday);
+    QDate targetWeekStart = weekStart.addDays(currentWeekOffset * 7);
+    return targetWeekStart.addDays(column - 1);
+}
+
+bool ScheduleView::tryBuildSelectionRange(QDateTime& start, QDateTime& end) const {
+    if (!tableView || !tableView->selectionModel()) {
+        return false;
+    }
+
+    QModelIndexList indexes = tableView->selectionModel()->selectedIndexes();
+    if (indexes.isEmpty()) {
+        return false;
+    }
+
+    int column = -1;
+    int minRow = 24;
+    int maxRow = -1;
+
+    for (const QModelIndex& index : indexes) {
+        if (!index.isValid() || index.column() == 0) {
+            continue;
+        }
+
+        if (column == -1) {
+            column = index.column();
+        } else if (index.column() != column) {
+            return false;
+        }
+
+        minRow = std::min(minRow, index.row());
+        maxRow = std::max(maxRow, index.row());
+    }
+
+    if (column == -1 || minRow < 0 || maxRow >= 24) {
+        return false;
+    }
+
+    for (int row = minRow; row <= maxRow; ++row) {
+        if (column < static_cast<int>(occupiedSlots[row].size()) && occupiedSlots[row][column]) {
+            return false;
+        }
+    }
+
+    QDate date = getDateForColumn(column);
+    if (!date.isValid()) {
+        return false;
+    }
+
+    QDateTime startDateTime(date, QTime(minRow, 0));
+    QDateTime endDateTime = startDateTime.addSecs((maxRow - minRow + 1) * 3600);
+
+    start = startDateTime;
+    end = endDateTime;
+    return true;
+}
+
+void ScheduleView::processSelectionRelease() {
+    QDateTime start;
+    QDateTime end;
+    if (!tryBuildSelectionRange(start, end)) {
+        return;
+    }
+
+    if (tableView->selectionModel()) {
+        tableView->selectionModel()->clearSelection();
+    }
+
+    emit createEventRequested(start, end);
+}
+
+bool ScheduleView::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == tableView->viewport() && event->type() == QEvent::MouseButtonRelease) {
+        auto mouseEvent = static_cast<QMouseEvent*>(event);
+        if (mouseEvent->button() == Qt::LeftButton) {
+            processSelectionRelease();
+        }
+    }
+
+    return QWidget::eventFilter(watched, event);
 }
 
