@@ -69,7 +69,8 @@ void ScheduleCellDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
 
     painter->save();
     painter->setPen(opt.palette.text().color());
-    painter->drawText(eventRect.adjusted(4, 0, -4, 0), Qt::AlignLeft | Qt::AlignVCenter, text);
+    QRect textRect = eventRect.adjusted(4, 2, -4, 0);
+    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignTop, text);
     painter->restore();
 
     painter->save();

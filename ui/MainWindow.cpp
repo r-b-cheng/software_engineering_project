@@ -18,6 +18,8 @@
 
 #include <QListWidgetItem>
 
+#include <QCalendarWidget>
+
 
 
 MainWindow::MainWindow(QWidget* parent)
@@ -26,11 +28,31 @@ MainWindow::MainWindow(QWidget* parent)
 
     , ui(new Ui::MainWindow)
 
-    , nextEventId(1) {
+    , nextEventId(1)
+
+    , calendarSyncInProgress(false) {
 
     
 
     ui->setupUi(this);
+
+    
+
+    if (ui->mainLayout) {
+
+        ui->mainLayout->setStretch(0, 1);
+
+        ui->mainLayout->setStretch(1, 4);
+
+    }
+
+    
+
+    if (ui->calendarWidget) {
+        ui->calendarWidget->setMaximumWidth(320);
+        connect(ui->calendarWidget, &QCalendarWidget::clicked,
+                this, &MainWindow::onCalendarDateSelected);
+    }
 
     
 
@@ -524,6 +546,50 @@ void MainWindow::onWeekChanged(int offset) {
 
     updateScheduleView();
 
+    
+
+    if (!calendarSyncInProgress && ui->calendarWidget) {
+
+        QDate weekStart = getWeekStartDate(offset);
+
+        if (weekStart.isValid()) {
+
+            ui->calendarWidget->setSelectedDate(weekStart);
+
+        }
+
+    }
+
+}
+
+
+
+void MainWindow::onCalendarDateSelected(const QDate& date) {
+
+    if (!date.isValid()) {
+
+        return;
+
+    }
+
+    
+
+    int targetOffset = getWeekOffsetForDate(date);
+
+    if (targetOffset == ui->scheduleView->getCurrentWeekOffset()) {
+
+        return;
+
+    }
+
+    
+
+    calendarSyncInProgress = true;
+
+    ui->scheduleView->setWeekOffset(targetOffset);
+
+    calendarSyncInProgress = false;
+
 }
 
 
@@ -659,6 +725,44 @@ void MainWindow::processNewEvent(ScheduleEvent event) {
                            QString::fromUtf8("无法添加事件: %1").arg(QString::fromStdString(errorMsg)));
         nextEventId--;
     }
+}
+
+
+
+QDate MainWindow::getWeekStartDate(int weekOffset) const {
+
+    QDate today = QDate::currentDate();
+
+    int daysToMonday = today.dayOfWeek() - 1;
+
+    QDate weekStart = today.addDays(-daysToMonday);
+
+    return weekStart.addDays(weekOffset * 7);
+
+}
+
+
+
+int MainWindow::getWeekOffsetForDate(const QDate& date) const {
+
+    if (!date.isValid()) {
+
+        return 0;
+
+    }
+
+    
+
+    QDate targetWeekStart = date.addDays(-(date.dayOfWeek() - 1));
+
+    QDate currentWeekStart = getWeekStartDate(0);
+
+    int dayDiff = currentWeekStart.daysTo(targetWeekStart);
+
+    int offset = dayDiff / 7;
+
+    return offset;
+
 }
 
 

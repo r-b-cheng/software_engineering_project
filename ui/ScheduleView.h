@@ -21,8 +21,8 @@ private:
     QPushButton* prevWeekButton;
     QPushButton* nextWeekButton;
     QLabel* weekLabel;
-    QLabel* hoverLabel;
     int currentWeekOffset;
+    QLabel* hoverLabel;
     
     std::vector<ScheduleEvent> currentEvents;
     std::vector<std::vector<bool>> occupiedSlots;

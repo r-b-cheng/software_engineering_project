@@ -39,6 +39,7 @@ private slots:
     void onEventDoubleClicked(int eventId);
     void onDeleteEventRequested(int eventId);
     void onCreateEventFromSelection(const QDateTime& start, const QDateTime& end);
+    void onCalendarDateSelected(const QDate& date);
 
 private:
     Ui::MainWindow *ui;
@@ -46,6 +47,7 @@ private:
     // 数据管理
     DataManager dataManager;
     int nextEventId;
+    bool calendarSyncInProgress;
     
     // 数据文件路径
     QString userDataPath;
@@ -57,6 +59,8 @@ private:
     void updateScheduleView();
     void showEventDetails(int eventId);
     void processNewEvent(ScheduleEvent event);
+    QDate getWeekStartDate(int weekOffset) const;
+    int getWeekOffsetForDate(const QDate& date) const;
 };
 
 #endif // MAINWINDOW_H

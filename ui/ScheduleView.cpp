@@ -24,12 +24,19 @@ constexpr int kSecondsPerSlot = kSlotMinutes * 60;
 
 ScheduleView::ScheduleView(QWidget* parent)
     : QWidget(parent),
+      tableView(nullptr),
+      model(nullptr),
+      prevWeekButton(nullptr),
+      nextWeekButton(nullptr),
+      weekLabel(nullptr),
       currentWeekOffset(0),
+      hoverLabel(nullptr),
+      currentEvents(),
       occupiedSlots(kSlotsPerDay, std::vector<bool>(8, false)),
       dragSelecting(false),
+      dragStartTime(),
       dragStartSlot(-1),
-      dragStartColumn(-1),
-      hoverLabel(nullptr) {
+      dragStartColumn(-1) {
     setupUI();
 }
 
@@ -196,11 +203,9 @@ void ScheduleView::setSchedule(const std::vector<ScheduleEvent>& events) {
         }
 
         QString displayText = QString::fromUtf8(event.getEventName().c_str());
-        if (!event.getLocation().empty()) {
-            displayText += "\n@" + QString::fromUtf8(event.getLocation().c_str());
-        }
 
         QStandardItem* item = new QStandardItem(displayText);
+        item->setData(static_cast<int>(Qt::AlignLeft | Qt::AlignTop), Qt::TextAlignmentRole);
         item->setData(event.getId(), Qt::UserRole);
         item->setData(normalizedMinute, ScheduleRoles::StartMinuteRole);
         item->setData(static_cast<int>(durationMinutes), ScheduleRoles::DurationMinutesRole);
