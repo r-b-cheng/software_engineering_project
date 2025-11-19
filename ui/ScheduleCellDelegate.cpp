@@ -57,7 +57,7 @@ void ScheduleCellDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
         fillColor = opt.palette.highlight().color().lighter(130);
     }
     if (option.state & QStyle::State_Selected) {
-        fillColor = opt.palette.highlight().color();
+        fillColor = QColor("#d3d3d3");
     }
 
     painter->save();

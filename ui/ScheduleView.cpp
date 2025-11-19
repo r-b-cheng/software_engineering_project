@@ -318,6 +318,30 @@ void ScheduleView::beginSelection(const QPoint& pos) {
     int column = -1;
     dragSelecting = computeTimeAtPosition(pos, time, slot, column);
     if (dragSelecting) {
+        bool hasEvent = false;
+        if (tableView && model) {
+            QModelIndex index = tableView->indexAt(pos);
+            if (index.isValid() && index.column() > 0) {
+                if (QStandardItem* item = model->itemFromIndex(index)) {
+                    int eventId = item->data(Qt::UserRole).toInt();
+                    if (eventId > 0 || !item->text().isEmpty()) {
+                        hasEvent = true;
+                    }
+                }
+            }
+        }
+        if (!hasEvent && slot >= 0 && slot < static_cast<int>(occupiedSlots.size()) &&
+            column >= 1 && column < static_cast<int>(occupiedSlots[slot].size())) {
+            hasEvent = occupiedSlots[slot][column];
+        }
+
+        if (hasEvent) {
+            dragSelecting = false;
+            dragStartSlot = -1;
+            dragStartColumn = -1;
+            return;
+        }
+
         dragStartTime = time;
         dragStartSlot = slot;
         dragStartColumn = column;
