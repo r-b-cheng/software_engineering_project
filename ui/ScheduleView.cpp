@@ -86,6 +86,8 @@ void ScheduleView::setupUI() {
     tableView->viewport()->installEventFilter(this);
     tableView->horizontalHeader()->setStretchLastSection(false);
     tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    tableView->horizontalHeader()->setFixedHeight(70);
+    tableView->horizontalHeader()->setSectionsClickable(true);
     tableView->verticalHeader()->setVisible(false);
     tableView->verticalHeader()->setDefaultSectionSize(44);
     tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -103,6 +105,7 @@ void ScheduleView::setupUI() {
     connect(nextWeekButton, &QPushButton::clicked, this, &ScheduleView::onNextWeekClicked);
     connect(tableView, &QTableView::doubleClicked, this, &ScheduleView::onCellDoubleClicked);
     connect(tableView, &QTableView::customContextMenuRequested, this, &ScheduleView::onContextMenuRequested);
+    connect(tableView->horizontalHeader(), &QHeaderView::sectionDoubleClicked, this, &ScheduleView::onHeaderDoubleClicked);
 
     tableView->setItemDelegate(new ScheduleCellDelegate(tableView));
 
@@ -129,17 +132,18 @@ void ScheduleView::setWeekOffset(int offset) {
     currentWeekOffset = offset;
     updateWeekLabel();
     
-    // 更新表头日期
+    // 更新表头以反映新的周
     QStringList headers;
     headers << QString::fromUtf8("时间");
-    
-    // 添加带日期的星期列头
     QStringList weekHeaders = getWeekHeaders();
     for (int i = 0; i < 7; ++i) {
         headers << weekHeaders[i];
     }
-    
     model->setHorizontalHeaderLabels(headers);
+    
+    // 更新tooltip和字体大小
+    updateHeaderTooltips();
+    adjustHeaderFontSize();
     
     emit weekChanged(offset);
 }
@@ -164,6 +168,12 @@ void ScheduleView::setSchedule(const std::vector<ScheduleEvent>& events) {
     for (const auto& event : events) {
         if (!event.getTimeSlot().getIsCourse() && event.getWeekOffset() != currentWeekOffset) {
             continue;
+        }
+        if (event.getTimeSlot().getIsCourse()) {
+            std::pair<int,int> key{event.getId(), currentWeekOffset};
+            if (suppressedCourseWeeks.count(key)) {
+                continue;
+            }
         }
         
         int weekday = event.getWeekday();
@@ -210,6 +220,14 @@ void ScheduleView::setSchedule(const std::vector<ScheduleEvent>& events) {
         item->setData(normalizedMinute, ScheduleRoles::StartMinuteRole);
         item->setData(static_cast<int>(durationMinutes), ScheduleRoles::DurationMinutesRole);
         item->setData(spanRows, ScheduleRoles::SpanRowsRole);
+        int effectiveTags = event.getTags();
+        if (event.getTimeSlot().getIsCourse()) {
+            std::pair<int,int> tagKey{event.getId(), currentWeekOffset};
+            if (!courseTagWeeks.count(tagKey)) {
+                effectiveTags = 0;
+            }
+        }
+        item->setData(effectiveTags, ScheduleRoles::TagsRole);
         QColor eventColor = event.getTimeSlot().getIsCourse() ? QColor(173, 216, 230)
                                                               : QColor(255, 255, 224);
         item->setData(eventColor, ScheduleRoles::ColorRole);
@@ -225,6 +243,31 @@ void ScheduleView::setSchedule(const std::vector<ScheduleEvent>& events) {
             tableView->setSpan(startHour, weekday, spanRows, 1);
         }
     }
+
+    // 更新表头以附加节假日提示
+    QStringList headers;
+    headers << QString::fromUtf8("时间");
+    QStringList weekHeaders = getWeekHeaders();
+    for (int i = 0; i < 7; ++i) headers << weekHeaders[i];
+    model->setHorizontalHeaderLabels(headers);
+}
+
+void ScheduleView::setSuppressedCourseWeeks(const std::set<std::pair<int,int>>& suppressed) {
+    suppressedCourseWeeks = suppressed;
+    // 触发表头与视图刷新
+    QStringList headers;
+    headers << QString::fromUtf8("时间");
+    QStringList weekHeaders = getWeekHeaders();
+    for (int i = 0; i < 7; ++i) headers << weekHeaders[i];
+    model->setHorizontalHeaderLabels(headers);
+    // 重绘当前周内容
+    setSchedule(currentEvents);
+}
+
+void ScheduleView::setCourseTagWeeks(const std::set<std::pair<int,int>>& courseTags) {
+    courseTagWeeks = courseTags;
+    // 重绘当前周内容以应用标签显示规则
+    setSchedule(currentEvents);
 }
 
 int ScheduleView::getCurrentWeekOffset() const {
@@ -268,17 +311,84 @@ QStringList ScheduleView::getWeekHeaders() {
     // 根据周偏移量调整
     QDate targetWeekStart = weekStart.addDays(currentWeekOffset * 7);
     
-    // 生成一周的日期
+    // 生成一周的日期，附加外部节假日提示（不以事件形式存在）
     for (int i = 0; i < 7; ++i) {
         QDate currentDate = targetWeekStart.addDays(i);
-        QString header = QString("%1\n(%2/%3)")
-                        .arg(weekNames[i])
-                        .arg(currentDate.month())
-                        .arg(currentDate.day());
-        headers << header;
+        QString base = QString("%1\n(%2/%3)")
+                        .arg(weekNames[i], QString::number(currentDate.month()), QString::number(currentDate.day()));
+
+        QStringList notes;
+        for (const auto& h : weekHolidays) {
+            if (h.first == currentDate) {
+                notes << h.second;
+            }
+        }
+        if (!notes.isEmpty()) {
+            base += QString("\n%1").arg(QString::fromUtf8("节假日"));
+        }
+        headers << base;
     }
     
     return headers;
+}
+
+void ScheduleView::setHolidays(const std::vector<std::pair<QDate, QString>>& holidays) {
+    weekHolidays = holidays;
+    QStringList headers;
+    headers << QString::fromUtf8("时间");
+    QStringList weekHeaders = getWeekHeaders();
+    for (int i = 0; i < 7; ++i) headers << weekHeaders[i];
+    model->setHorizontalHeaderLabels(headers);
+    
+    // 设置表头tooltip，显示完整节假日信息
+    updateHeaderTooltips();
+    
+    // 智能调整表头字体，只在必要时缩小
+    adjustHeaderFontSize();
+}
+
+void ScheduleView::adjustHeaderFontSize() {
+    QHeaderView* header = tableView->horizontalHeader();
+    if (!header) return;
+    // 保持默认字体大小，不因节假日名称长度而缩小
+}
+
+void ScheduleView::updateHeaderTooltips() {
+    QHeaderView* header = tableView->horizontalHeader();
+    if (!header) return;
+    
+    // 为第一列（时间列）设置tooltip
+    header->model()->setHeaderData(0, Qt::Horizontal, 
+        QString::fromUtf8("时间槽"), Qt::ToolTipRole);
+    
+    // 为每一天的列设置tooltip
+    QDate weekStart = QDate::currentDate().addDays(-QDate::currentDate().dayOfWeek() + 1);
+    QDate targetWeekStart = weekStart.addDays(currentWeekOffset * 7);
+    
+    QStringList weekNames = {QString::fromUtf8("周一"), QString::fromUtf8("周二"), 
+                            QString::fromUtf8("周三"), QString::fromUtf8("周四"), 
+                            QString::fromUtf8("周五"), QString::fromUtf8("周六"), 
+                            QString::fromUtf8("周日")};
+    for (int i = 0; i < 7; ++i) {
+        QDate currentDate = targetWeekStart.addDays(i);
+        QString tooltip = QString("%1 (%2/%3)")
+            .arg(weekNames[i], QString::number(currentDate.month()), QString::number(currentDate.day()));
+        
+        // 查找该日期的所有节假日
+        QStringList holidaysOnDate;
+        for (const auto& h : weekHolidays) {
+            if (h.first == currentDate) {
+                holidaysOnDate << h.second;
+            }
+        }
+        
+        if (!holidaysOnDate.isEmpty()) {
+            tooltip += QString("\n\n") + QString::fromUtf8("节假日：") + QString("\n");
+            tooltip += holidaysOnDate.join(QString("\n"));
+        }
+        
+        header->model()->setHeaderData(i + 1, Qt::Horizontal, tooltip, Qt::ToolTipRole);
+    }
 }
 
 void ScheduleView::onContextMenuRequested(const QPoint& pos) {
@@ -298,6 +408,23 @@ void ScheduleView::onContextMenuRequested(const QPoint& pos) {
     if (selectedAction == deleteAction) {
         emit deleteEventRequested(eventId);
     }
+}
+
+void ScheduleView::onHeaderDoubleClicked(int section) {
+    if (section < 1 || section > 7) return;
+    QDate d = getDateForColumn(section);
+    if (!d.isValid()) return;
+    QStringList notes;
+    for (const auto& h : weekHolidays) {
+        if (h.first == d) notes << h.second;
+    }
+    QString msg;
+    if (notes.isEmpty()) {
+        msg = QString::fromUtf8("日期: %1\n无节假日").arg(d.toString("yyyy年MM月dd日"));
+    } else {
+        msg = QString::fromUtf8("日期: %1\n\n节假日：\n%2").arg(d.toString("yyyy年MM月dd日")).arg(notes.join(QString::fromUtf8("\n")));
+    }
+    QMessageBox::information(this, QString::fromUtf8("节假日详情"), msg);
 }
 
 QDate ScheduleView::getDateForColumn(int column) const {

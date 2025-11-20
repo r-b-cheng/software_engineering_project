@@ -50,6 +50,29 @@ QTime timeFromCombo(const QComboBox* combo) {
     }
     return QTime::fromString(combo->currentText(), "hh:mm");
 }
+
+// 标签相关辅助函数
+int getTagsFromUI(const Ui::AddEventDialog* ui) {
+    int tags = 0;
+    if (ui->midtermCheck->isChecked()) tags |= TAG_MIDTERM;
+    if (ui->finalCheck->isChecked()) tags |= TAG_FINAL;
+    if (ui->reviewCheck->isChecked()) tags |= TAG_REVIEW;
+    if (ui->makeupCheck->isChecked()) tags |= TAG_MAKEUP;
+    if (ui->preCheck->isChecked()) tags |= TAG_PRE;
+    if (ui->urgentCheck->isChecked()) tags |= TAG_URGENT;
+    if (ui->importantCheck->isChecked()) tags |= TAG_IMPORTANT;
+    return tags;
+}
+
+void setUITags(Ui::AddEventDialog* ui, int tags) {
+    ui->midtermCheck->setChecked((tags & TAG_MIDTERM) != 0);
+    ui->finalCheck->setChecked((tags & TAG_FINAL) != 0);
+    ui->reviewCheck->setChecked((tags & TAG_REVIEW) != 0);
+    ui->makeupCheck->setChecked((tags & TAG_MAKEUP) != 0);
+    ui->preCheck->setChecked((tags & TAG_PRE) != 0);
+    ui->urgentCheck->setChecked((tags & TAG_URGENT) != 0);
+    ui->importantCheck->setChecked((tags & TAG_IMPORTANT) != 0);
+}
 }  // namespace
 
 AddEventDialog::AddEventDialog(QWidget* parent)
@@ -68,6 +91,9 @@ AddEventDialog::AddEventDialog(QWidget* parent)
     ui->endDateEdit->setDate(later.date());
     setComboToRoundedTime(ui->startTimeCombo, now.time());
     setComboToRoundedTime(ui->endTimeCombo, later.time());
+
+    // 确保初始进入对话框时所有标签均为未选中
+    setUITags(ui, 0);
 }
 
 AddEventDialog::~AddEventDialog() {
@@ -88,13 +114,16 @@ ScheduleEvent AddEventDialog::getEvent() const {
         std::chrono::system_clock::from_time_t(endDateTime.toSecsSinceEpoch()),
         ui->isCourseCheck->isChecked());
 
+    int tags = getTagsFromUI(ui);
+
     ScheduleEvent event(
         0,
         ui->nameEdit->text().toStdString(),
         ui->locationEdit->text().toStdString(),
         ui->descriptionEdit->toPlainText().toStdString(),
         weekday,
-        slot);
+        slot,
+        tags);
 
     return event;
 }
@@ -114,6 +143,10 @@ void AddEventDialog::setEvent(const ScheduleEvent& event) {
     setComboToRoundedTime(ui->startTimeCombo, startDateTime.time());
     setComboToRoundedTime(ui->endTimeCombo, endDateTime.time());
     ui->isCourseCheck->setChecked(event.getTimeSlot().getIsCourse());
+    
+    // 设置标签（先清空，再根据事件标签设定）
+    setUITags(ui, 0);
+    setUITags(ui, event.getTags());
 }
 
 void AddEventDialog::clear() {
@@ -128,6 +161,9 @@ void AddEventDialog::clear() {
     setComboToRoundedTime(ui->startTimeCombo, now.time());
     setComboToRoundedTime(ui->endTimeCombo, later.time());
     ui->isCourseCheck->setChecked(false);
+    
+    // 清除所有标签
+    setUITags(ui, 0);
 }
 
 void AddEventDialog::presetTimeRange(const QDateTime& start, const QDateTime& end) {
@@ -142,4 +178,20 @@ void AddEventDialog::presetTimeRange(const QDateTime& start, const QDateTime& en
     ui->endDateEdit->setDate(endTime.date());
     setComboToRoundedTime(ui->startTimeCombo, startTime.time());
     setComboToRoundedTime(ui->endTimeCombo, endTime.time());
+}
+
+void AddEventDialog::setTagEditOnly(bool enable) {
+    // 只允许编辑标签，其余控件设为只读或禁用
+    ui->nameEdit->setEnabled(!enable);
+    ui->locationEdit->setEnabled(!enable);
+    ui->descriptionEdit->setEnabled(!enable);
+    ui->startDateEdit->setEnabled(!enable);
+    ui->endDateEdit->setEnabled(!enable);
+    ui->startTimeCombo->setEnabled(!enable);
+    ui->endTimeCombo->setEnabled(!enable);
+    ui->isCourseCheck->setEnabled(!enable);
+}
+
+int AddEventDialog::getSelectedTags() const {
+    return getTagsFromUI(ui);
 }

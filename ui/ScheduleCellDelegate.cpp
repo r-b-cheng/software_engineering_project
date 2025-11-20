@@ -1,4 +1,5 @@
 #include "ScheduleCellDelegate.h"
+#include "../datastructure/ScheduleEvent.h"
 
 #include <QApplication>
 #include <QPainter>
@@ -70,7 +71,44 @@ void ScheduleCellDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
     painter->save();
     painter->setPen(opt.palette.text().color());
     QRect textRect = eventRect.adjusted(4, 2, -4, 0);
-    painter->drawText(textRect, Qt::AlignLeft | Qt::AlignTop, text);
+
+    // 始终优先绘制事件名称（第一行）
+    QFont nameFont = opt.font;
+    painter->setFont(nameFont);
+    QFontMetrics nameMetrics(nameFont);
+    int nameHeight = nameMetrics.height();
+    QRect nameRect = textRect;
+    nameRect.setHeight(nameHeight);
+    painter->drawText(nameRect, Qt::AlignLeft | Qt::AlignTop, text);
+
+    // 标签以小字体绘制在事件名之后（第二行）
+    const int tags = index.data(ScheduleRoles::TagsRole).toInt();
+    if (tags != 0) {
+        QStringList tagNames;
+        if (tags & TAG_MIDTERM) tagNames << QString::fromUtf8("期中");
+        if (tags & TAG_FINAL) tagNames << QString::fromUtf8("期末");
+        if (tags & TAG_REVIEW) tagNames << QString::fromUtf8("复习");
+        if (tags & TAG_MAKEUP) tagNames << QString::fromUtf8("补课");
+        if (tags & TAG_PRE) tagNames << QString::fromUtf8("Pre");
+        if (tags & TAG_URGENT) tagNames << QString::fromUtf8("紧急");
+        if (tags & TAG_IMPORTANT) tagNames << QString::fromUtf8("重要");
+
+        if (!tagNames.isEmpty()) {
+            QString tagsText = tagNames.join(QString::fromUtf8(" "));
+            QFont tagFont = opt.font;
+            tagFont.setPointSize(std::max(6, tagFont.pointSize() - 2));
+            painter->setFont(tagFont);
+            QFontMetrics tagMetrics(tagFont);
+            int tagHeight = tagMetrics.height();
+
+            QRect tagRect = textRect;
+            tagRect.setTop(nameRect.bottom() + 2);
+            tagRect.setHeight(tagHeight);
+            painter->setPen(QColor(150, 150, 150));
+            painter->drawText(tagRect, Qt::AlignLeft | Qt::AlignTop, tagsText);
+        }
+    }
+
     painter->restore();
 
     painter->save();

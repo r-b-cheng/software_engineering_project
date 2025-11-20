@@ -10,8 +10,11 @@ class DataManager {
 private:
     User user;
     std::vector<Professor> professors;
+    std::vector<std::pair<int,int>> suppressedCourseWeeks; // (eventId, weekOffset)
 
 public:
+    struct HolidayItem { int year; int month; int day; std::string name; };
+    std::vector<HolidayItem> holidays;
     DataManager();
 
     // 保存学生数据到文件
@@ -38,6 +41,12 @@ public:
     
     // 保存教师信息
     bool saveProfessorsData(const std::vector<Professor>& profs, const std::string& filePath);
+
+    // 假期与屏蔽课程的持久化数据访问
+    void setHolidays(const std::vector<HolidayItem>& items);
+    const std::vector<HolidayItem>& getHolidays() const;
+    void setSuppressedCourseWeeks(const std::vector<std::pair<int,int>>& suppressed);
+    const std::vector<std::pair<int,int>>& getSuppressedCourseWeeks() const;
 };
 
 #endif // DATAMANAGER_H

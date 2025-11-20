@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>320</height>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -51,19 +51,84 @@
        <property name="maximumSize">
         <size>
          <width>16777215</width>
-         <height>80</height>
+         <height>60</height>
         </size>
        </property>
       </widget>
      </item>
      <item row="3" column="0">
+      <widget class="QLabel" name="tagsLabel">
+       <property name="text">
+        <string>标签:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QGroupBox" name="tagsGroup">
+       <property name="title">
+        <string>选择标签（可多选）</string>
+       </property>
+       <layout class="QGridLayout" name="tagsLayout">
+        <item row="0" column="0">
+         <widget class="QCheckBox" name="midtermCheck">
+          <property name="text">
+           <string>期中</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QCheckBox" name="finalCheck">
+          <property name="text">
+           <string>期末</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QCheckBox" name="reviewCheck">
+          <property name="text">
+           <string>复习</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QCheckBox" name="makeupCheck">
+          <property name="text">
+           <string>补课</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QCheckBox" name="preCheck">
+          <property name="text">
+           <string>pre</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QCheckBox" name="urgentCheck">
+          <property name="text">
+           <string>紧急</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QCheckBox" name="importantCheck">
+          <property name="text">
+           <string>重要</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="4" column="0">
       <widget class="QLabel" name="startDateLabel">
        <property name="text">
         <string>开始日期:</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
+     <item row="4" column="1">
       <widget class="QDateEdit" name="startDateEdit">
        <property name="displayFormat">
         <string>yyyy-MM-dd</string>
@@ -73,14 +138,14 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
+     <item row="5" column="0">
       <widget class="QLabel" name="startTimeLabel">
        <property name="text">
         <string>开始时间:</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="5" column="1">
       <widget class="QComboBox" name="startTimeCombo">
        <property name="editable">
         <bool>false</bool>
@@ -90,14 +155,14 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="6" column="0">
       <widget class="QLabel" name="endDateLabel">
        <property name="text">
         <string>结束日期:</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="1">
+     <item row="6" column="1">
       <widget class="QDateEdit" name="endDateEdit">
        <property name="displayFormat">
         <string>yyyy-MM-dd</string>
@@ -107,14 +172,14 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="0">
+     <item row="7" column="0">
       <widget class="QLabel" name="endTimeLabel">
        <property name="text">
         <string>结束时间:</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
+     <item row="7" column="1">
       <widget class="QComboBox" name="endTimeCombo">
        <property name="editable">
         <bool>false</bool>
@@ -124,14 +189,14 @@
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
+     <item row="8" column="0">
       <widget class="QLabel" name="isCourseLabel">
        <property name="text">
         <string/>
        </property>
       </widget>
      </item>
-     <item row="7" column="1">
+     <item row="8" column="1">
       <widget class="QCheckBox" name="isCourseCheck">
        <property name="text">
         <string>是否为课程/办公时间</string>

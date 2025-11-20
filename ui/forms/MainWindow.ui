@@ -99,15 +99,17 @@
     <addaction name="separator"/>
     <addaction name="exitAction"/>
    </widget>
-   <widget class="QMenu" name="editMenu">
+  <widget class="QMenu" name="editMenu">
     <property name="title">
      <string>编辑</string>
     </property>
     <addaction name="addEventAction"/>
     <addaction name="importProfessorAction"/>
     <addaction name="importStudentCoursesAction"/>
+    <addaction name="syncHolidaysAction"/>
+    
     <addaction name="autoJumpAction"/>
-   </widget>
+  </widget>
    <addaction name="fileMenu"/>
    <addaction name="editMenu"/>
   </widget>
@@ -123,9 +125,11 @@
     <bool>false</bool>
    </attribute>
    <addaction name="addEventAction"/>
-   <addaction name="importProfessorAction"/>
-   <addaction name="importStudentCoursesAction"/>
-   <addaction name="calculateAction"/>
+    <addaction name="importProfessorAction"/>
+    <addaction name="importStudentCoursesAction"/>
+    <addaction name="syncHolidaysAction"/>
+    
+    <addaction name="calculateAction"/>
    <addaction name="separator"/>
    <addaction name="saveDataAction"/>
    <addaction name="settingsAction"/>
@@ -165,6 +169,13 @@
     <string>设置</string>
    </property>
   </action>
+  <action name="syncHolidaysAction">
+   <property name="text">
+    <string>同步澳门假期</string>
+   </property>
+  </action>
+  
+  
   <action name="autoJumpAction">
    <property name="checkable">
     <bool>true</bool>
@@ -204,7 +215,7 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections>
+  <connections>
   <connection>
    <sender>addEventAction</sender>
    <signal>triggered()</signal>
@@ -333,8 +344,10 @@
     </hint>
    </hints>
   </connection>
+  
+  
  </connections>
- <slots>
+  <slots>
   <slot>on_addEventBtn_clicked()</slot>
   <slot>on_importProfessorBtn_clicked()</slot>
   <slot>on_importStudentCoursesBtn_clicked()</slot>
@@ -346,5 +359,6 @@
   <slot>on_settingsAction_triggered()</slot>
   <slot>onWeekChanged(int)</slot>
   <slot>onEventDoubleClicked(int)</slot>
- </slots>
+  <slot>on_syncHolidaysAction_triggered()</slot>
+  </slots>
 </ui>

@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <set>
 #include <QListWidgetItem>
 #include <QDateTime>
 #include "ScheduleView.h"
@@ -33,6 +34,8 @@ private slots:
     void on_exitAction_triggered();
     void on_showScheduleAction_triggered();
     void on_settingsAction_triggered();
+    void on_syncHolidaysAction_triggered();
+    void on_clearHolidaysAction_triggered();
     
     // ScheduleView 相关槽函数（需要手动连接，因为是自定义信号）
     void onWeekChanged(int offset);
@@ -61,6 +64,10 @@ private:
     void processNewEvent(ScheduleEvent event);
     QDate getWeekStartDate(int weekOffset) const;
     int getWeekOffsetForDate(const QDate& date) const;
+    std::set<std::pair<int,int>> suppressedCourseWeeks;
+    std::set<std::pair<int,int>> courseTagWeeks;
+    std::vector<std::pair<QDate, QString>> holidays;
+    std::vector<std::pair<QDate, QString>> filterWeekHolidays(int offset) const;
 };
 
 #endif // MAINWINDOW_H

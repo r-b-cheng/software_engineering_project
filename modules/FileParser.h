@@ -13,6 +13,9 @@ public:
     
     // 解析教师CSV文件
     static std::vector<Professor> parseProfessorsCsv(const std::string& filePath);
+
+    // 解析ICS文本，提取公共假期事件（DTSTART/DTEND/SUMMARY）
+    static std::vector<ScheduleEvent> parseIcsHolidays(const std::string& icsContent);
 };
 
 #endif // FILEPARSER_H

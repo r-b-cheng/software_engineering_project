@@ -21,6 +21,9 @@ public:
     void clear();
     void presetTimeRange(const QDateTime& start, const QDateTime& end);
 
+    void setTagEditOnly(bool enable);
+    int getSelectedTags() const;
+
 private:
     Ui::AddEventDialog *ui;
 };

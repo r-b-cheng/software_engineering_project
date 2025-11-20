@@ -28,7 +28,8 @@ bool DataManager::saveUserData(const User& userData, const std::string& filePath
              << event.getWeekday() << ","
              << startTime << ","
              << endTime << ","
-             << event.getTimeSlot().getIsCourse() << "\n";
+             << event.getTimeSlot().getIsCourse() << ","
+             << event.getTags() << "\n";
     }
     
     // 保存个人日程
@@ -44,9 +45,19 @@ bool DataManager::saveUserData(const User& userData, const std::string& filePath
              << event.getWeekday() << ","
              << startTime << ","
              << endTime << ","
-             << event.getTimeSlot().getIsCourse() << "\n";
+             << event.getTimeSlot().getIsCourse() << ","
+             << event.getTags() << "\n";
     }
 
+    // 保存假期与屏蔽课程信息（同一输出流，避免重复追加）
+    file << "HOLIDAYS:\n";
+    for (const auto& h : holidays) {
+        file << h.year << "-" << h.month << "-" << h.day << "," << h.name << "\n";
+    }
+    file << "SUPPRESS:\n";
+    for (const auto& p : suppressedCourseWeeks) {
+        file << p.first << "," << p.second << "\n";
+    }
     file.close();
     return true;
 }
@@ -72,10 +83,14 @@ bool DataManager::loadUserData(User& userData, const std::string& filePath) {
             section = "COURSES";
         } else if (line == "PERSONAL:") {
             section = "PERSONAL";
+        } else if (line == "HOLIDAYS:") {
+            section = "HOLIDAYS";
+        } else if (line == "SUPPRESS:") {
+            section = "SUPPRESS";
         } else {
             // 解析事件
             std::istringstream iss(line);
-            std::string id, name, location, description, weekday, startTime, endTime, isCourse;
+            std::string id, name, location, description, weekday, startTime, endTime, isCourse, tags;
             
             std::getline(iss, id, ',');
             std::getline(iss, name, ',');
@@ -85,8 +100,9 @@ bool DataManager::loadUserData(User& userData, const std::string& filePath) {
             std::getline(iss, startTime, ',');
             std::getline(iss, endTime, ',');
             std::getline(iss, isCourse, ',');
+            std::getline(iss, tags, ',');
             
-            if (!id.empty()) {
+            if (!id.empty() && (section == "COURSES" || section == "PERSONAL")) {
                 std::time_t start_t = std::stoll(startTime);
                 std::time_t end_t = std::stoll(endTime);
                 
@@ -97,10 +113,39 @@ bool DataManager::loadUserData(User& userData, const std::string& filePath) {
                 ScheduleEvent event(std::stoi(id), name, location, description,
                                   std::stoi(weekday), slot);
                 
+                // 设置标签
+                if (!tags.empty()) {
+                    event.setTags(std::stoi(tags));
+                }
+                
                 if (section == "COURSES") {
                     userData.getCourses().addEvent(event);
                 } else if (section == "PERSONAL") {
                     userData.getPersonalSchedule().addEvent(event);
+                }
+            } else if (section == "HOLIDAYS") {
+                // 解析假期行：YYYY-MM-DD,Name
+                std::string dateStr, holidayName;
+                std::istringstream hss(line);
+                std::getline(hss, dateStr, ',');
+                std::getline(hss, holidayName, ',');
+                if (!dateStr.empty()) {
+                    int y=0,m=0,d=0;
+                    char dash1='-', dash2='-';
+                    std::istringstream ds(dateStr);
+                    ds >> y >> dash1 >> m >> dash2 >> d;
+                    if (y>0 && m>0 && d>0) {
+                        holidays.push_back(HolidayItem{y,m,d,holidayName});
+                    }
+                }
+            } else if (section == "SUPPRESS") {
+                // 解析屏蔽课程行：eventId,weekOffset
+                std::string eidStr, offStr;
+                std::istringstream pss(line);
+                std::getline(pss, eidStr, ',');
+                std::getline(pss, offStr, ',');
+                if (!eidStr.empty() && !offStr.empty()) {
+                    suppressedCourseWeeks.emplace_back(std::stoi(eidStr), std::stoi(offStr));
                 }
             }
         }
@@ -144,7 +189,7 @@ bool DataManager::loadProfessorsData(const std::string& filePath) {
         } else if (currentProf != nullptr) {
             // 解析办公时间
             std::istringstream iss(line);
-            std::string id, name, location, description, weekday, startTime, endTime, isCourse;
+            std::string id, name, location, description, weekday, startTime, endTime, isCourse, tags;
             
             std::getline(iss, id, ',');
             std::getline(iss, name, ',');
@@ -154,6 +199,7 @@ bool DataManager::loadProfessorsData(const std::string& filePath) {
             std::getline(iss, startTime, ',');
             std::getline(iss, endTime, ',');
             std::getline(iss, isCourse, ',');
+            std::getline(iss, tags, ',');
             
             if (!id.empty()) {
                 std::time_t start_t = std::stoll(startTime);
@@ -165,6 +211,11 @@ bool DataManager::loadProfessorsData(const std::string& filePath) {
                 
                 ScheduleEvent event(std::stoi(id), name, location, description,
                                   std::stoi(weekday), slot);
+                
+                // 设置标签
+                if (!tags.empty()) {
+                    event.setTags(std::stoi(tags));
+                }
                 
                 currentProf->getOfficeHours().addEvent(event);
             }
@@ -230,11 +281,28 @@ bool DataManager::saveProfessorsData(const std::vector<Professor>& profs,
                  << event.getWeekday() << ","
                  << startTime << ","
                  << endTime << ","
-                 << event.getTimeSlot().getIsCourse() << "\n";
+                 << event.getTimeSlot().getIsCourse() << ","
+                 << event.getTags() << "\n";
         }
     }
 
     file.close();
     return true;
+}
+
+void DataManager::setHolidays(const std::vector<HolidayItem>& items) {
+    holidays = items;
+}
+
+const std::vector<DataManager::HolidayItem>& DataManager::getHolidays() const {
+    return holidays;
+}
+
+void DataManager::setSuppressedCourseWeeks(const std::vector<std::pair<int,int>>& suppressed) {
+    suppressedCourseWeeks = suppressed;
+}
+
+const std::vector<std::pair<int,int>>& DataManager::getSuppressedCourseWeeks() const {
+    return suppressedCourseWeeks;
 }
 

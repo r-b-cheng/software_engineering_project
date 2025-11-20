@@ -8,6 +8,7 @@ constexpr int StartMinuteRole = Qt::UserRole + 1;
 constexpr int DurationMinutesRole = Qt::UserRole + 2;
 constexpr int SpanRowsRole = Qt::UserRole + 3;
 constexpr int ColorRole = Qt::UserRole + 4;
+constexpr int TagsRole = Qt::UserRole + 5;
 }
 
 class ScheduleCellDelegate : public QStyledItemDelegate {

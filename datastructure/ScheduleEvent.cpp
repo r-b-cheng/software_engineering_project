@@ -6,14 +6,14 @@
 
 
 ScheduleEvent::ScheduleEvent()
-    : id(0), weekday(MONDAY) {
+    : id(0), weekday(MONDAY), tags(0) {
 }
 
 ScheduleEvent::ScheduleEvent(int eventId, const std::string& name,
                              const std::string& loc, const std::string& desc,
-                             int day, const TimeSlot& slot)
+                             int day, const TimeSlot& slot, int eventTags)
     : id(eventId), eventName(name), location(loc),
-      description(desc), weekday(day), timeSlot(slot) {
+      description(desc), weekday(day), timeSlot(slot), tags(eventTags) {
 }
 
 int ScheduleEvent::getId() const {
@@ -38,6 +38,41 @@ int ScheduleEvent::getWeekday() const {
 
 TimeSlot ScheduleEvent::getTimeSlot() const {
     return timeSlot;
+}
+
+int ScheduleEvent::getTags() const {
+    return tags;
+}
+
+// 标签相关方法
+bool ScheduleEvent::hasTag(EventTag tag) const {
+    return (tags & tag) != 0;
+}
+
+void ScheduleEvent::addTag(EventTag tag) {
+    tags |= tag;
+}
+
+void ScheduleEvent::removeTag(EventTag tag) {
+    tags &= ~tag;
+}
+
+void ScheduleEvent::setTags(int newTags) {
+    tags = newTags;
+}
+
+std::vector<std::string> ScheduleEvent::getTagNames() const {
+    std::vector<std::string> tagNames;
+    
+    if (hasTag(TAG_MIDTERM)) tagNames.push_back("期中");
+    if (hasTag(TAG_FINAL)) tagNames.push_back("期末");
+    if (hasTag(TAG_REVIEW)) tagNames.push_back("复习");
+    if (hasTag(TAG_MAKEUP)) tagNames.push_back("补课");
+    if (hasTag(TAG_PRE)) tagNames.push_back("Pre");
+    if (hasTag(TAG_URGENT)) tagNames.push_back("紧急");
+    if (hasTag(TAG_IMPORTANT)) tagNames.push_back("重要");
+    
+    return tagNames;
 }
 
 void ScheduleEvent::setId(int eventId) {

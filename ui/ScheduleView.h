@@ -11,6 +11,7 @@
 #include <QDateTime>
 #include "../datastructure/ScheduleEvent.h"
 #include <vector>
+#include <set>
 
 class ScheduleView : public QWidget {
     Q_OBJECT
@@ -30,6 +31,9 @@ private:
     QDateTime dragStartTime;
     int dragStartSlot;
     int dragStartColumn;
+    std::vector<std::pair<QDate, QString>> weekHolidays;
+    std::set<std::pair<int,int>> suppressedCourseWeeks;
+    std::set<std::pair<int,int>> courseTagWeeks;
 
     void setupUI();
     void updateWeekLabel();
@@ -40,6 +44,8 @@ private:
     void updateHoverIndicator(const QPoint& pos, bool forceHide = false);
     bool computeTimeAtPosition(const QPoint& pos, QDateTime& time, int& slot, int& column) const;
     bool isRangeAvailable(int column, int startSlot, int endSlot) const;
+    void updateHeaderTooltips();
+    void adjustHeaderFontSize();
 
 public:
     explicit ScheduleView(QWidget* parent = nullptr);
@@ -47,6 +53,9 @@ public:
 
     void setWeekOffset(int offset);
     void setSchedule(const std::vector<ScheduleEvent>& events);
+    void setHolidays(const std::vector<std::pair<QDate, QString>>& holidays);
+    void setSuppressedCourseWeeks(const std::set<std::pair<int,int>>& suppressed);
+    void setCourseTagWeeks(const std::set<std::pair<int,int>>& courseTags);
     
     int getCurrentWeekOffset() const;
 
@@ -61,6 +70,7 @@ private slots:
     void onNextWeekClicked();
     void onCellDoubleClicked(const QModelIndex& index);
     void onContextMenuRequested(const QPoint& pos);
+    void onHeaderDoubleClicked(int section);
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;

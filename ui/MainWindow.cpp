@@ -7,6 +7,10 @@
 #include "../modules/SchedulerLogic.h"
 
 #include "SettingsDialog.h"
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QEventLoop>
 
 #include <QMessageBox>
 
@@ -15,6 +19,7 @@
 #include <QFileInfo>
 
 #include <QDir>
+#include <set>
 
 #include <QListWidgetItem>
 
@@ -144,6 +149,19 @@ void MainWindow::loadData() {
 
             }
 
+            // 加载持久化的假期与屏蔽课程信息到界面
+            holidays.clear();
+            for (const auto& h : dataManager.getHolidays()) {
+                QDate d(h.year, h.month, h.day);
+                holidays.push_back({d, QString::fromStdString(h.name)});
+            }
+            suppressedCourseWeeks.clear();
+            for (const auto& p : dataManager.getSuppressedCourseWeeks()) {
+                suppressedCourseWeeks.insert(p);
+            }
+            ui->scheduleView->setHolidays(filterWeekHolidays(ui->scheduleView->getCurrentWeekOffset()));
+            ui->scheduleView->setSuppressedCourseWeeks(suppressedCourseWeeks);
+
         }
 
     } else {
@@ -173,6 +191,16 @@ void MainWindow::loadData() {
 
 
 void MainWindow::saveData() {
+
+    // 将当前的假期与屏蔽课程写回 DataManager 以便持久化
+    std::vector<DataManager::HolidayItem> hitems;
+    for (const auto& h : holidays) {
+        DataManager::HolidayItem it{h.first.year(), h.first.month(), h.first.day(), h.second.toStdString()};
+        hitems.push_back(it);
+    }
+    dataManager.setHolidays(hitems);
+    std::vector<std::pair<int,int>> suppressedVec(suppressedCourseWeeks.begin(), suppressedCourseWeeks.end());
+    dataManager.setSuppressedCourseWeeks(suppressedVec);
 
     dataManager.saveUserData(dataManager.getUser(), userDataPath.toStdString());
 
@@ -545,6 +573,8 @@ void MainWindow::on_settingsAction_triggered() {
 void MainWindow::onWeekChanged(int offset) {
 
     updateScheduleView();
+    // 更新表头节假日提示
+    ui->scheduleView->setHolidays(filterWeekHolidays(offset));
 
     
 
@@ -610,93 +640,94 @@ void MainWindow::onCreateEventFromSelection(const QDateTime& start, const QDateT
 
 
 void MainWindow::showEventDetails(int eventId) {
-    // 查找事件
-    ScheduleEvent* foundEvent = nullptr;
-    
+    // 查找事件（复制安全副本，课程按当前周归一化）
+    bool found = false;
+    ScheduleEvent foundEvent;
 
-    for (auto& event : dataManager.getUser().getCourses().getEventsForWeekCopy(ui->scheduleView->getCurrentWeekOffset())) {
-
-        if (event.getId() == eventId) {
-
-            foundEvent = const_cast<ScheduleEvent*>(&event);
-
+    const int currentOffset = ui->scheduleView->getCurrentWeekOffset();
+    // 课程：使用归一化后的当周副本
+    for (const auto& ev : dataManager.getUser().getCourses().getEventsForWeekCopy(currentOffset)) {
+        if (ev.getId() == eventId) {
+            foundEvent = ev;
+            found = true;
             break;
-
         }
-
+    }
+    // 个人事件：直接匹配原事件
+    if (!found) {
+        for (const auto& ev : dataManager.getUser().getPersonalSchedule().getAllEvents()) {
+            if (ev.getId() == eventId) {
+                foundEvent = ev;
+                found = true;
+                break;
+            }
+        }
     }
 
-    
+    if (found) {
+        AddEventDialog dialog(this);
+        dialog.setWindowTitle(QString::fromUtf8("编辑事件标签"));
+        // 根据当前周偏移映射过滤课程标签的初始显示
+        ScheduleEvent displayEvent = foundEvent;
+        if (displayEvent.getTimeSlot().getIsCourse()) {
+            int currentOffsetForUI = ui->scheduleView->getCurrentWeekOffset();
+            if (courseTagWeeks.count({eventId, currentOffsetForUI}) == 0) {
+                displayEvent.setTags(0);
+            }
+        }
+        dialog.setEvent(displayEvent);
+        dialog.setTagEditOnly(true);
 
-    if (!foundEvent) {
+        if (dialog.exec() == QDialog::Accepted) {
+            int newTags = dialog.getSelectedTags();
 
-        for (auto& event : dataManager.getUser().getPersonalSchedule().getAllEvents()) {
+            bool updated = false;
 
-            if (event.getId() == eventId) {
-
-                foundEvent = const_cast<ScheduleEvent*>(&event);
-
-                break;
-
+            const auto& courseEvents = dataManager.getUser().getCourses().getAllEvents();
+            for (const auto& e : courseEvents) {
+                if (e.getId() == eventId) {
+                    ScheduleEvent updatedEvent = e;
+                    updatedEvent.setTags(newTags);
+                    dataManager.getUser().getCourses().removeEvent(eventId);
+                    std::string err;
+                    dataManager.getUser().getCourses().addEventSafely(updatedEvent, err);
+                    updated = true;
+                    break;
+                }
             }
 
+            if (!updated) {
+                const auto& personalEvents = dataManager.getUser().getPersonalSchedule().getAllEvents();
+                for (const auto& e : personalEvents) {
+                    if (e.getId() == eventId) {
+                        ScheduleEvent updatedEvent = e;
+                        updatedEvent.setTags(newTags);
+                        dataManager.getUser().getPersonalSchedule().removeEvent(eventId);
+                        std::string err;
+                        dataManager.getUser().getPersonalSchedule().addEventSafely(updatedEvent, err);
+                        updated = true;
+                        break;
+                    }
+                }
+            }
+
+            if (updated) {
+                if (foundEvent.getTimeSlot().getIsCourse()) {
+                    int currentOffset = ui->scheduleView->getCurrentWeekOffset();
+                    if (newTags != 0) {
+                        courseTagWeeks.insert({eventId, currentOffset});
+                    } else {
+                        courseTagWeeks.erase({eventId, currentOffset});
+                    }
+                    ui->scheduleView->setCourseTagWeeks(courseTagWeeks);
+                }
+                updateScheduleView();
+                saveData();
+                QMessageBox::information(this, QString::fromUtf8("已更新"), QString::fromUtf8("标签已更新"));
+            } else {
+                QMessageBox::warning(this, QString::fromUtf8("更新失败"), QString::fromUtf8("未找到事件"));
+            }
         }
-
-    }
-
-
-
-    if (foundEvent) {
-
-        // 使用QDateTime来正确显示时间，避免std::localtime的问题
-
-        auto startTime = std::chrono::system_clock::to_time_t(foundEvent->getTimeSlot().getStartTime());
-
-        auto endTime = std::chrono::system_clock::to_time_t(foundEvent->getTimeSlot().getEndTime());
-
-        
-
-        QDateTime startDateTime = QDateTime::fromSecsSinceEpoch(startTime);
-
-        QDateTime endDateTime = QDateTime::fromSecsSinceEpoch(endTime);
-
-        
-
-        QString startStr = startDateTime.toString("yyyy-MM-dd hh:mm");
-
-        QString endStr = endDateTime.toString("yyyy-MM-dd hh:mm");
-
-        
-
-        QString details = QString::fromUtf8(
-
-            "事件: %1\n"
-
-            "地点: %2\n"
-
-            "开始时间: %3\n"
-
-            "结束时间: %4\n"
-
-            "类型: %5\n"
-
-            "备注: %6"
-
-        ).arg(QString::fromUtf8(foundEvent->getEventName().c_str()))
-
-         .arg(QString::fromUtf8(foundEvent->getLocation().c_str()))
-
-         .arg(startStr)
-
-         .arg(endStr)
-
-         .arg(foundEvent->getTimeSlot().getIsCourse() ? QString::fromUtf8("课程") : QString::fromUtf8("个人日程"))
-
-         .arg(QString::fromUtf8(foundEvent->getDescription().c_str()));
-
-        
-
-        QMessageBox::information(this, QString::fromUtf8("事件详情"), details);
     }
 }
 
@@ -705,6 +736,45 @@ void MainWindow::processNewEvent(ScheduleEvent event) {
     
     std::string errorMsg;
     bool success = false;
+    auto start_t = std::chrono::system_clock::to_time_t(event.getTimeSlot().getStartTime());
+    QDateTime startDT = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(start_t));
+    QDate startDate = startDT.date();
+
+    if (event.getTimeSlot().getIsCourse()) {
+        for (const auto& h : holidays) {
+            if (h.first == startDate) {
+                QMessageBox::warning(this, QString::fromUtf8("添加失败"), QString::fromUtf8("节假日当天不允许添加课程"));
+                nextEventId--;
+                return;
+            }
+        }
+    }
+
+    auto secondsOfDay = [](const QDateTime& dt) {
+        return dt.time().hour() * 3600 + dt.time().minute() * 60 + dt.time().second();
+    };
+    auto end_t = std::chrono::system_clock::to_time_t(event.getTimeSlot().getEndTime());
+    QDateTime endDT = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(end_t));
+    int newStartSec = secondsOfDay(startDT);
+    int newEndSec = secondsOfDay(endDT);
+    if (newEndSec <= newStartSec) newEndSec = newStartSec + 60;
+
+    for (const auto& c : dataManager.getUser().getCourses().getAllEvents()) {
+        if (c.getWeekday() != startDate.dayOfWeek()) continue;
+        auto cst = std::chrono::system_clock::to_time_t(c.getTimeSlot().getStartTime());
+        auto cet = std::chrono::system_clock::to_time_t(c.getTimeSlot().getEndTime());
+        QDateTime cStartDT = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(cst));
+        QDateTime cEndDT = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(cet));
+        int cStartSec = secondsOfDay(cStartDT);
+        int cEndSec = secondsOfDay(cEndDT);
+        if (cEndSec <= cStartSec) cEndSec = cStartSec + 60;
+        bool overlap = !(newEndSec <= cStartSec || newStartSec >= cEndSec);
+        if (overlap) {
+            QMessageBox::warning(this, QString::fromUtf8("时间冲突"), QString::fromUtf8("与课程时间冲突，不能添加"));
+            nextEventId--;
+            return;
+        }
+    }
     
     if (event.getTimeSlot().getIsCourse()) {
         success = dataManager.getUser().getCourses().addEventSafely(event, errorMsg);
@@ -713,6 +783,10 @@ void MainWindow::processNewEvent(ScheduleEvent event) {
     }
     
     if (success) {
+        if (event.getTimeSlot().getIsCourse() && event.getTags() != 0) {
+            courseTagWeeks.insert({event.getId(), event.getWeekOffset()});
+            ui->scheduleView->setCourseTagWeeks(courseTagWeeks);
+        }
         if (ui->autoJumpAction->isChecked()) {
             ui->scheduleView->setWeekOffset(event.getWeekOffset());
         }
@@ -816,5 +890,89 @@ void MainWindow::onDeleteEventRequested(int eventId) {
 
     }
 
+}
+
+
+
+
+std::vector<std::pair<QDate, QString>> MainWindow::filterWeekHolidays(int offset) const {
+    std::vector<std::pair<QDate, QString>> result;
+    QDate weekStart = getWeekStartDate(offset);
+    for (const auto& h : holidays) {
+        int diff = weekStart.daysTo(h.first);
+        if (diff >= 0 && diff < 7) {
+            result.push_back(h);
+        }
+    }
+    return result;
+}
+void MainWindow::on_syncHolidaysAction_triggered() {
+    const QUrl icsUrl("https://www.officeholidays.com/ics/ics_country.php?tbl_country=Macau");
+    QNetworkAccessManager mgr;
+    QNetworkRequest req(icsUrl);
+    QEventLoop loop;
+    QNetworkReply* reply = mgr.get(req);
+    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    if (reply->error() != QNetworkReply::NoError) {
+        QMessageBox::warning(this, QString::fromUtf8("同步失败"),
+                             QString::fromUtf8("无法获取假期数据: %1").arg(reply->errorString()));
+        reply->deleteLater();
+        return;
+    }
+
+    QByteArray data = reply->readAll();
+    reply->deleteLater();
+
+    std::vector<ScheduleEvent> holidaysEvents = FileParser::parseIcsHolidays(std::string(data.constData(), data.size()));
+    if (holidaysEvents.empty()) {
+        QMessageBox::information(this, QString::fromUtf8("同步结果"), QString::fromUtf8("未解析到假期事件"));
+        return;
+    }
+
+    // 转存为日期+名称，并删除当天的课程事件
+    std::set<QDate> holidayDates;
+    holidays.clear();
+    for (const auto& e : holidaysEvents) {
+        auto st = std::chrono::system_clock::to_time_t(e.getTimeSlot().getStartTime());
+        QDate d = QDateTime::fromSecsSinceEpoch(static_cast<qint64>(st)).date();
+        holidays.push_back({d, QString::fromStdString(e.getEventName())});
+        holidayDates.insert(d);
+    }
+
+    // 非破坏性处理：仅屏蔽节假日所在周的课程出现，不全局删除
+    for (const QDate& hd : holidayDates) {
+        int weekOffset = getWeekOffsetForDate(hd);
+        for (const auto& ev : dataManager.getUser().getCourses().getAllEvents()) {
+            if (ev.getWeekday() == hd.dayOfWeek()) {
+                suppressedCourseWeeks.insert({ev.getId(), weekOffset});
+            }
+        }
+    }
+
+    updateScheduleView();
+    ui->scheduleView->setSuppressedCourseWeeks(suppressedCourseWeeks);
+    ui->scheduleView->setHolidays(filterWeekHolidays(ui->scheduleView->getCurrentWeekOffset()));
+    saveData();
+    QMessageBox::information(this, QString::fromUtf8("同步完成"),
+                             QString::fromUtf8("节假日当天的课程已删除"));
+}
+
+void MainWindow::on_clearHolidaysAction_triggered() {
+    // 删除个人日程中描述为“公共假期”的事件（之前同步的假期事件）
+    std::vector<int> toRemove;
+    for (const auto& e : dataManager.getUser().getPersonalSchedule().getAllEvents()) {
+        if (QString::fromStdString(e.getDescription()) == QString::fromUtf8("公共假期")) {
+            toRemove.push_back(e.getId());
+        }
+    }
+    for (int id : toRemove) {
+        dataManager.getUser().getPersonalSchedule().removeEvent(id);
+    }
+    updateScheduleView();
+    saveData();
+    QMessageBox::information(this, QString::fromUtf8("清理完成"),
+                             QString::fromUtf8("已删除旧假期事件 %1 条").arg(static_cast<int>(toRemove.size())));
 }
 
