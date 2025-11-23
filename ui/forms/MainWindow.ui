@@ -31,7 +31,58 @@
     <item>
      <layout class="QHBoxLayout" name="mainLayout">
       <item>
-       <layout class="QVBoxLayout" name="leftLayout"/>
+       <layout class="QVBoxLayout" name="leftLayout">
+       <item>
+         <widget class="QCalendarWidget" name="calendarWidget">
+          <property name="maximumSize">
+           <size>
+            <width>170</width>
+            <height>160</height>
+           </size>
+          </property>
+          <property name="gridVisible">
+           <bool>true</bool>
+          </property>
+          <property name="verticalHeaderFormat">
+           <enum>QCalendarWidget::VerticalHeaderFormat::NoVerticalHeader</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="tagFilterLayout">
+         <item>
+          <widget class="QLabel" name="tagFilterLabel">
+           <property name="text">
+            <string>按标签筛选</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="tagFilterComboBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+        <item>
+         <spacer name="calendarSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </item>
       <item>
        <layout class="QVBoxLayout" name="rightLayout">
@@ -41,6 +92,27 @@
            <size>
             <width>600</width>
             <height>400</height>
+           </size>
+         </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="sideListLayout">
+        <item>
+         <widget class="QLabel" name="tagResultLabel">
+          <property name="text">
+           <string>标签匹配（近10条）</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QListWidget" name="tagResultListWidget">
+          <property name="minimumSize">
+           <size>
+            <width>220</width>
+            <height>150</height>
            </size>
           </property>
          </widget>
@@ -70,13 +142,15 @@
     <addaction name="exitAction"/>
    </widget>
   <widget class="QMenu" name="editMenu">
-   <property name="title">
-    <string>编辑</string>
-   </property>
-   <addaction name="addEventAction"/>
-   <addaction name="importProfessorAction"/>
-   <addaction name="importStudentCoursesAction"/>
-   <addaction name="autoJumpAction"/>
+    <property name="title">
+     <string>编辑</string>
+    </property>
+    <addaction name="addEventAction"/>
+    <addaction name="importProfessorAction"/>
+    <addaction name="importStudentCoursesAction"/>
+    <addaction name="syncHolidaysAction"/>
+    
+    <addaction name="autoJumpAction"/>
   </widget>
    <addaction name="fileMenu"/>
    <addaction name="editMenu"/>
@@ -93,9 +167,11 @@
     <bool>false</bool>
    </attribute>
    <addaction name="addEventAction"/>
-   <addaction name="importProfessorAction"/>
-   <addaction name="importStudentCoursesAction"/>
-   <addaction name="calculateAction"/>
+    <addaction name="importProfessorAction"/>
+    <addaction name="importStudentCoursesAction"/>
+    <addaction name="syncHolidaysAction"/>
+    
+    <addaction name="calculateAction"/>
    <addaction name="separator"/>
    <addaction name="saveDataAction"/>
    <addaction name="settingsAction"/>
@@ -135,15 +211,22 @@
     <string>设置</string>
    </property>
   </action>
-  <action name="autoJumpAction">
+  <action name="syncHolidaysAction">
    <property name="text">
-    <string>自动跳转到事件所在周</string>
+    <string>同步澳门假期</string>
    </property>
+  </action>
+  
+  
+  <action name="autoJumpAction">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="checked">
     <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>自动跳转到事件所在周</string>
    </property>
   </action>
   <action name="showScheduleAction">
@@ -174,7 +257,7 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections>
+  <connections>
   <connection>
    <sender>addEventAction</sender>
    <signal>triggered()</signal>
@@ -303,41 +386,10 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>scheduleView</sender>
-   <signal>weekChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>onWeekChanged(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>scheduleView</sender>
-   <signal>eventDoubleClicked(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>onEventDoubleClicked(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
-
+  
+  
  </connections>
- <slots>
+  <slots>
   <slot>on_addEventBtn_clicked()</slot>
   <slot>on_importProfessorBtn_clicked()</slot>
   <slot>on_importStudentCoursesBtn_clicked()</slot>
@@ -349,5 +401,6 @@
   <slot>on_settingsAction_triggered()</slot>
   <slot>onWeekChanged(int)</slot>
   <slot>onEventDoubleClicked(int)</slot>
- </slots>
+  <slot>on_syncHolidaysAction_triggered()</slot>
+  </slots>
 </ui>

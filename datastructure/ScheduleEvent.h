@@ -3,6 +3,7 @@
 
 #include "TimeSlot.h"
 #include <string>
+#include <vector>
 
 enum Weekday {
     MONDAY = 1,    // 周一
@@ -14,6 +15,17 @@ enum Weekday {
     SUNDAY = 7     // 周日
 };
 
+enum EventTag {
+    TAG_NONE = 0,
+    TAG_MIDTERM = 1,    // 期中
+    TAG_FINAL = 2,      // 期末
+    TAG_REVIEW = 4,     // 复习
+    TAG_MAKEUP = 8,     // 补课
+    TAG_PRE = 16,       // pre
+    TAG_URGENT = 32,    // 紧急
+    TAG_IMPORTANT = 64  // 重要
+};
+
 class ScheduleEvent {
 private:
     int id;
@@ -22,11 +34,12 @@ private:
     std::string description;
     int weekday;
     TimeSlot timeSlot;
+    int tags; // 使用位标志存储多个标签
 
 public:
     ScheduleEvent();
     ScheduleEvent(int eventId, const std::string& name, const std::string& loc,
-                  const std::string& desc, int day, const TimeSlot& slot);
+                  const std::string& desc, int day, const TimeSlot& slot, int eventTags = 0);
 
     // Getters
     int getId() const;
@@ -35,6 +48,14 @@ public:
     std::string getDescription() const;
     int getWeekday() const;
     TimeSlot getTimeSlot() const;
+    int getTags() const;
+    
+    // 标签相关方法
+    bool hasTag(EventTag tag) const;
+    void addTag(EventTag tag);
+    void removeTag(EventTag tag);
+    void setTags(int tags);
+    std::vector<std::string> getTagNames() const;
 
     // Setters
     void setId(int eventId);
@@ -49,4 +70,3 @@ public:
 };
 
 #endif // SCHEDULEEVENT_H
-

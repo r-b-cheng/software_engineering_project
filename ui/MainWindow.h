@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <set>
 #include <QListWidgetItem>
 #include <QDateTime>
 #include "ScheduleView.h"
@@ -33,11 +34,16 @@ private slots:
     void on_exitAction_triggered();
     void on_showScheduleAction_triggered();
     void on_settingsAction_triggered();
+    void on_syncHolidaysAction_triggered();
+    void on_clearHolidaysAction_triggered();
+    void onTagFilterChanged(int index);
     
     // ScheduleView 相关槽函数（需要手动连接，因为是自定义信号）
     void onWeekChanged(int offset);
     void onEventDoubleClicked(int eventId);
     void onDeleteEventRequested(int eventId);
+    void onCreateEventFromSelection(const QDateTime& start, const QDateTime& end);
+    void onCalendarDateSelected(const QDate& date);
 
 private:
     Ui::MainWindow *ui;
@@ -45,6 +51,7 @@ private:
     // 数据管理
     DataManager dataManager;
     int nextEventId;
+    bool calendarSyncInProgress;
     
     // 数据文件路径
     QString userDataPath;
@@ -54,7 +61,16 @@ private:
     void loadData();
     void saveData();
     void updateScheduleView();
+    void initTagFilter();
+    void updateTagSearchResults();
     void showEventDetails(int eventId);
+    void processNewEvent(ScheduleEvent event);
+    QDate getWeekStartDate(int weekOffset) const;
+    int getWeekOffsetForDate(const QDate& date) const;
+    std::set<std::pair<int,int>> suppressedCourseWeeks;
+    std::set<std::pair<int,int>> courseTagWeeks;
+    std::vector<std::pair<QDate, QString>> holidays;
+    std::vector<std::pair<QDate, QString>> filterWeekHolidays(int offset) const;
 };
 
 #endif // MAINWINDOW_H

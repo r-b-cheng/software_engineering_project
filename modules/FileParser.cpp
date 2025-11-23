@@ -4,11 +4,12 @@
 #include <ctime>
 #include <iomanip>
 #include <algorithm>
+#include <regex>
 
 Schedule FileParser::parseCsv(const std::string& filePath) {
     Schedule schedule;
     std::ifstream file(filePath);
-    
+
     if (!file.is_open()) {
         return schedule;
     }
@@ -16,14 +17,14 @@ Schedule FileParser::parseCsv(const std::string& filePath) {
     std::string line;
     // 跳过表头
     std::getline(file, line);
-    
+
     int eventId = 1;
     while (std::getline(file, line)) {
         if (line.empty()) continue;
-        
+
         std::istringstream iss(line);
         std::string name, location, description, weekdayStr, startTimeStr, endTimeStr, isCourseStr;
-        
+
         std::getline(iss, name, ',');
         std::getline(iss, location, ',');
         std::getline(iss, description, ',');
@@ -31,30 +32,30 @@ Schedule FileParser::parseCsv(const std::string& filePath) {
         std::getline(iss, startTimeStr, ',');
         std::getline(iss, endTimeStr, ',');
         std::getline(iss, isCourseStr, ',');
-        
+
         if (!name.empty()) {
             // 解析时间（假设格式为 YYYY-MM-DD HH:MM）
             std::tm start_tm = {};
             std::tm end_tm = {};
-            
+
             std::istringstream start_ss(startTimeStr);
             start_ss >> std::get_time(&start_tm, "%Y-%m-%d %H:%M");
-            
+
             std::istringstream end_ss(endTimeStr);
             end_ss >> std::get_time(&end_tm, "%Y-%m-%d %H:%M");
-            
+
             std::time_t start_t = std::mktime(&start_tm);
             std::time_t end_t = std::mktime(&end_tm);
-            
+
             bool isCourse = (isCourseStr == "1" || isCourseStr == "true");
-            
+
             TimeSlot slot(std::chrono::system_clock::from_time_t(start_t),
-                        std::chrono::system_clock::from_time_t(end_t),
-                        isCourse);
-            
+                          std::chrono::system_clock::from_time_t(end_t),
+                          isCourse);
+
             int weekday = std::stoi(weekdayStr);
             ScheduleEvent event(eventId++, name, location, description, weekday, slot);
-            
+
             schedule.addEvent(event);
         }
     }
@@ -164,5 +165,74 @@ std::vector<Professor> FileParser::parseProfessorsCsv(const std::string& filePat
 
     file.close();
     return professors;
+}
+
+std::vector<ScheduleEvent> FileParser::parseIcsHolidays(const std::string& icsContent) {
+    std::vector<ScheduleEvent> events;
+    std::istringstream ss(icsContent);
+    std::string line;
+    bool inEvent = false;
+    std::string dtstart;
+    std::string dtend;
+    std::string summary;
+
+    auto parseIcsDateTime = [](const std::string& s, std::time_t& out) -> bool {
+        // Handles formats like YYYYMMDD or YYYYMMDDTHHMMSSZ
+        std::tm tm = {};
+        try {
+            if (s.size() >= 8) {
+                tm.tm_year = std::stoi(s.substr(0,4)) - 1900;
+                tm.tm_mon  = std::stoi(s.substr(4,2)) - 1;
+                tm.tm_mday = std::stoi(s.substr(6,2));
+                if (s.size() >= 15 && s[8] == 'T') {
+                    tm.tm_hour = std::stoi(s.substr(9,2));
+                    tm.tm_min  = std::stoi(s.substr(11,2));
+                    tm.tm_sec  = std::stoi(s.substr(13,2));
+                } else {
+                    tm.tm_hour = 0; tm.tm_min = 0; tm.tm_sec = 0;
+                }
+                // Treat as local time
+                out = std::mktime(&tm);
+                return out != -1;
+            }
+        } catch (...) {}
+        return false;
+    };
+
+    while (std::getline(ss, line)) {
+        if (line.rfind("BEGIN:VEVENT", 0) == 0) {
+            inEvent = true; dtstart.clear(); dtend.clear(); summary.clear();
+        } else if (line.rfind("END:VEVENT", 0) == 0) {
+            if (inEvent && !summary.empty() && !dtstart.empty()) {
+                std::time_t start_t = 0, end_t = 0;
+                if (!parseIcsDateTime(dtstart, start_t)) { inEvent = false; continue; }
+                if (!dtend.empty()) parseIcsDateTime(dtend, end_t);
+                if (end_t == 0 || end_t <= start_t) end_t = start_t + 3600; // default 1h
+
+                TimeSlot slot(std::chrono::system_clock::from_time_t(start_t),
+                              std::chrono::system_clock::from_time_t(end_t),
+                              false);
+                // weekday: 1..7 (Qt style), but we store int
+                std::tm* stm = std::localtime(&start_t);
+                int weekday = stm ? ((stm->tm_wday == 0) ? 7 : stm->tm_wday) : 1;
+                ScheduleEvent ev(0, summary, "", "公共假期", weekday, slot);
+                events.push_back(ev);
+            }
+            inEvent = false;
+        } else if (inEvent) {
+            if (line.rfind("DTSTART", 0) == 0) {
+                auto pos = line.find(":");
+                if (pos != std::string::npos) dtstart = line.substr(pos+1);
+            } else if (line.rfind("DTEND", 0) == 0) {
+                auto pos = line.find(":");
+                if (pos != std::string::npos) dtend = line.substr(pos+1);
+            } else if (line.rfind("SUMMARY", 0) == 0) {
+                auto pos = line.find(":");
+                if (pos != std::string::npos) summary = line.substr(pos+1);
+            }
+        }
+    }
+
+    return events;
 }
 

@@ -1,4 +1,4 @@
-QT += core gui widgets
+QT += core gui widgets network
 
 CONFIG += c++17
 
@@ -24,6 +24,7 @@ SOURCES += \
     modules/FileParser.cpp \
     modules/SchedulerLogic.cpp \
     ui/MainWindow.cpp \
+    ui/ScheduleCellDelegate.cpp \
     ui/ScheduleView.cpp \
     ui/AddEventDialog.cpp \
     ui/ImportProfessorDialog.cpp \
@@ -42,6 +43,7 @@ HEADERS += \
     modules/FileParser.h \
     modules/SchedulerLogic.h \
     ui/MainWindow.h \
+    ui/ScheduleCellDelegate.h \
     ui/ScheduleView.h \
     ui/AddEventDialog.h \
     ui/ImportProfessorDialog.h \
