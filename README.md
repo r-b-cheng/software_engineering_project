@@ -1,148 +1,186 @@
-# 学生日程管理系统 (Schedule Manager)
+# Student Schedule Management System (Schedule Manager)
 
-这是一个基于Qt5/C++开发的学生日程管理系统，帮助学生管理个人日程和课程，并能够计算与教师之间的可用会面时间。
+## Project Introduction
+The “Muster’s Calendar” is a desktop application developed based on Qt5/C++ and designed specifically for student groups. 
 
-## 功能特性
+It aims to help users efficiently manage their personal schedules and course arrangements, and can intelligently calculate the available meeting times with teachers, thereby improving time management efficiency.
 
-1. **日程管理**
-   - 添加和查看课程安排
-   - 添加和查看个人日程
-   - 周视图展示（支持切换不同周）
-   - 双击事件查看详细信息
 
-2. **教师办公时间管理**
-   - 从CSV文件导入教师办公时间
-   - 存储多位教师的信息和办公时间
+## Functional Features
 
-3. **学生课程导入**
-   - 从CSV文件批量导入学生课程
-   - 支持课程和个人日程的区分
+1. **Schedule Management**
+   - Supports adding, editing, and deleting course schedules and personal schedules
+   
+   - Supports adding tags to events (such as midterm, final, review, etc.) for easy classification and management
+   - Weekly view display mode, allowing free switching between different weeks for viewing
+   
+   - Weekly view display mode, allowing free switching between different weeks for viewing
+   
 
-4. **智能时间计算**
-   - 自动计算学生与指定教师之间的可用会面时间
-   - 排除学生已有的课程和个人安排
-   - 显示所有不冲突的时间段
+2. **Teacher Office Hours Management**
+   - Batch import teacher information and office hours from CSV files
+   
+   - Batch import teacher information and office hours from CSV files
+   
+   - Automatically merge duplicate teacher information (identified by name)
 
-5. **数据持久化**
-   - 自动保存用户数据到本地文件
-   - 程序启动时自动加载历史数据
+3. **Course and Schedule Import**
+   - Support importing student course information from CSV files
+   
+   - Distinguish between courses and personal schedules, and manage them separately
+   
 
-## 项目结构
+4. **Intelligent time calculation**
+   - Automatically analyze time conflicts between students and designated teachers
+
+   - Exclude students' existing courses and personal schedules, and filter available meeting times
+
+   - Take holiday factors into account and avoid scheduling meetings during holidays
+
+5. **Data persistence**
+   - Automatically save user data to local files
+
+   - Historical data is automatically loaded when the program starts
+   - Data storage path
+      Under the data_storage/ directory
+       user_data.txt: User courses and personal schedules
+       professor_data.txt: Teacher information and office hours
+   
+
+## Project Structure
 
 ```
 project/
-├── datastructure/         # 数据结构定义
+├── datastructure/         # data structure definitions
 │   ├── TimeSlot.h/cpp
 │   ├── ScheduleEvent.h/cpp
 │   ├── Schedule.h/cpp
 │   ├── Professor.h/cpp
 │   └── User.h/cpp
-├── modules/              # 业务逻辑模块
+├── modules/              # business logic modules
 │   ├── DataManager.h/cpp
 │   ├── FileParser.h/cpp
 │   └── SchedulerLogic.h/cpp
-├── ui/                   # Qt界面组件
+├── ui/                   # Qt user interface components
 │   ├── MainWindow.h/cpp
 │   ├── ScheduleView.h/cpp
 │   ├── AddEventDialog.h/cpp
 │   ├── ImportProfessorDialog.h/cpp
 │   └── ResultDisplayWidget.h/cpp
-├── example_data/         # 示例数据文件
+├── example_data/         # example data files
 │   ├── professors.csv
 │   └── student_schedule.csv
-├── data_storage/         # 自动生成的数据存储目录
+├── data_storage/         # automatically generated data storage directory
 ├── main.cpp
 ├── ScheduleManager.pro
 └── README.md
 ```
 
-## 编译和运行
+## Compile and Run
 
-### 前置要求
+### Prerequisites
 
-- Qt 5.x 或更高版本
-- C++11 或更高版本编译器
-- qmake 构建工具
+- Qt 5.x or a higher version
+- A C++11 or higher version compiler
+- qmake build tool
 
-### 编译步骤
+### Installation and Operation
 
-#### 使用Qt Creator（推荐）
+#### Qt Creator（recommended）
 
-1. 打开Qt Creator
-2. 打开项目文件 `ScheduleManager.pro`
-3. 选择合适的构建套件（Kit）
-4. 点击 "构建" → "构建项目"
-5. 点击 "运行" 或按 Ctrl+R
+1. Open Qt Creator
+[![Open Qt Creator](C:\Users\lenovo】\Desktop\大三上\软件工程\software_engineering_project-main\READMEIMAGE\installation\step1-QtWindow.png)]
 
-#### 使用命令行
+2. Drag the file `ScheduleManager.pro` into the Qt Creator window
+[![Drag .pro into Qt Creator](C:\Users\lenovo】\Desktop\大三上\软件工程\software_engineering_project-main\READMEIMAGE\installation/step2-OpenFile.png)]
+
+3. Click the “run” button
+Click the "Run" button
+[![Click Run]("C:\Users\lenovo】\Desktop\大三上\软件工程\software_engineering_project-main\READMEIMAGE\installation\step3-Run.png")]
+
+4. The management system project will pop up as a window.
+The management system window will pop up
+[![Program Window](C:\Users\lenovo】\Desktop\大三上\软件工程\software_engineering_project-main\READMEIMAGE\installation\step4-ProgramWindow.png)]
+
+#### cmd
 
 ```bash
 # Windows
 qmake ScheduleManager.pro
-nmake         # 或 mingw32-make (如果使用MinGW)
+nmake         # or mingw32-make (if using MinGW)
 
 # Linux/macOS
 qmake ScheduleManager.pro
 make
 
-# 运行程序
+# run the program
 ./bin/ScheduleManager  # Linux/macOS
 bin\ScheduleManager.exe  # Windows
 ```
 
-## 使用说明
+## usage
 
-### 1. 添加个人日程
+### 1. Add Events
 
-1. 点击工具栏的 "添加日程" 按钮
-2. 填写事件信息：
-   - 事件名称
-   - 地点
-   - 备注
-   - 星期几
-   - 开始和结束时间
-   - 是否为课程（勾选"课程/办公时间"）
-3. 点击 "确定" 保存
+1. Click the "Add Schedule" button on the toolbar
+2. Fill in event details:
+   - Event name
+   - Location
+   - Notes
+   - Day of week
+   - Start and end time
+   - If it is a course (check "Course/Office Hours")
+3. Click "OK" to save
 
-### 2. 导入教师办公时间
+### 2. Delete Events
 
-1. 准备CSV格式的教师数据文件（参考 `example_data/professors.csv`）
-2. 点击工具栏的 "导入教师时间" 按钮
-3. 选择CSV文件
-4. 点击 "导入"
+1. Click the icon with the left mouse button
+2. Click "Delete the Event"
 
-### 3. 导入学生课程
 
-1. 准备CSV格式的学生课程文件（参考 `example_data/student_schedule.csv`）
-2. 点击工具栏的 "导入学生课程" 按钮
-3. 选择CSV文件
-4. 点击 "导入"
 
-### 4. 计算可用时间
+### 3. Add Teacher Schedule
 
-1. 点击工具栏的 "计算可用时间" 按钮
-2. 从下拉列表中选择教师
-3. 系统会自动计算并显示所有可用的会面时间段
-4. 结果窗口会显示教师的联系信息和可用时间列表
+1. Prepare a CSV-format file of teacher data (refer to `example_data/professors.csv`)
+2. Click the "Import Teacher Time" button on the toolbar
+3. Select the CSV file
+4. Click "Import"
 
-### 5. 查看日程
+### 4. Add Student Schedule
 
-- 主界面以周视图形式展示所有日程
-- 课程显示为浅蓝色背景
-- 个人日程显示为浅黄色背景
-- 双击事件可查看详细信息
-- 使用 "上一周" / "下一周" 按钮切换周视图
+1. Prepare a CSV-format student course file (refer to `example_data/student_schedule.csv`)
+2. Click the "Import Student Courses" button on the toolbar
+3. Select the CSV file
+4. Click "Import"
 
-## CSV文件格式
+### 5. Calculate Available Time Slots
 
-### 教师办公时间 (professors.csv)
+1. Click the "Calculate Available Time" button on the toolbar
+2. Select a teacher from the drop-down list
+3. The system will automatically calculate and display all available meeting time slots
+4. The result window will show the teacher's contact information and a list of available times
+
+### 5. View Schedules Information 
+
+- The main interface displays all schedules in a weekly view
+- Courses are shown with a light blue background.
+- Personal schedules are shown with a light yellow background
+- Use the "Previous Week" / "Next Week" buttons to switch the weekly view
+
+### 6. Modify the tag of the events
+- Double-click an event to modify detailed information
+
+
+## CSV File format
+
+### Teacher's office hours (professors.csv)
 
 ```csv
 ProfessorName,Email,EventName,Location,Description,Weekday,StartTime,EndTime
 Dr. Zhang,zhang@university.edu,Office Hour,Room 301,Weekly office hour,1,2025-01-06 14:00,2025-01-06 16:00
 ```
 
-字段说明：
+Field Description：
 - ProfessorName: 教师姓名
 - Email: 教师邮箱
 - EventName: 办公时间名称
@@ -152,7 +190,7 @@ Dr. Zhang,zhang@university.edu,Office Hour,Room 301,Weekly office hour,1,2025-01
 - StartTime: 开始时间（格式：YYYY-MM-DD HH:MM）
 - EndTime: 结束时间（格式：YYYY-MM-DD HH:MM）
 
-### 学生日程 (student_schedule.csv)
+### Student schedule (student_schedule.csv)
 
 ```csv
 EventName,Location,Description,Weekday,StartTime,EndTime,IsCourse
@@ -168,18 +206,10 @@ Math Class,Building A Room 101,Calculus lecture,1,2025-01-06 10:00,2025-01-06 12
 - EndTime: 结束时间（格式：YYYY-MM-DD HH:MM）
 - IsCourse: 是否为课程（1=是, 0=否）
 
-## 数据存储
 
-程序会自动在 `data_storage/` 目录下保存数据：
+## Explanation of Core Classes
 
-- `user_data.txt`: 用户的课程和个人日程
-- `professor_data.txt`: 教师信息和办公时间
-
-这些文件会在程序启动时自动加载，关闭时自动保存。
-
-## 核心类说明
-
-### 数据结构
+### data structure
 
 - **TimeSlot**: 表示时间段，包含开始时间、结束时间和是否为课程的标记
 - **ScheduleEvent**: 日程事件，包含事件名称、地点、描述等信息
@@ -187,13 +217,13 @@ Math Class,Building A Room 101,Calculus lecture,1,2025-01-06 10:00,2025-01-06 12
 - **Professor**: 教师信息，包含姓名、邮箱和办公时间
 - **User**: 学生用户，包含课程和个人日程
 
-### 业务逻辑模块
+### Business logic module
 
 - **DataManager**: 数据管理器，负责加载和保存数据
 - **FileParser**: 文件解析器，解析CSV格式的数据文件
 - **SchedulerLogic**: 调度逻辑，计算学生和教师之间的可用时间
 
-### UI组件
+### UI components
 
 - **MainWindow**: 主窗口，程序的主界面
 - **ScheduleView**: 日程视图，以周视图形式展示日程
@@ -201,23 +231,23 @@ Math Class,Building A Room 101,Calculus lecture,1,2025-01-06 10:00,2025-01-06 12
 - **ImportProfessorDialog**: 导入教师数据对话框
 - **ResultDisplayWidget**: 结果展示窗口
 
-## 技术特性
+## Technical features
 
-- 使用Qt Model-View框架实现UI和数据分离
-- 基于C++ STL标准库
-- 使用 `std::chrono` 进行时间处理
-- 完全的中文界面支持（UTF-8编码）
-- 模块化设计，易于维护和扩展
+- Implement UI and data separation using the Qt Model-View framework
+- Based on the C++ STL standard library
+- Use `std::chrono` for time processing
+- Full Chinese interface support (UTF-8 encoding)
+- Modular design for easy maintenance and expansion
 
-## 许可证
+## License
 
-本项目仅供学习和教学使用。
+This project is for learning and teaching purposes only.
 
-## 联系方式
+## Contact information
 
-如有问题或建议，请联系开发团队。
+If you have any questions or suggestions, please contact the development team.
 
 ---
 
-**祝您使用愉快！**
+**Happy use of the scheduling system!**
 
