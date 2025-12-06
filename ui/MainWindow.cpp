@@ -455,61 +455,69 @@ void MainWindow::on_importStudentCoursesBtn_clicked() {
             // 将导入的课程添加到用户的课程日程中
 
             const auto& events = importedSchedule.getAllEvents();
-
-            int successCount = 0;
-
-            int skipCount = 0;
-
-            
-
-            for (const auto& event : events) {
-
-                ScheduleEvent newEvent = event;
-
-                newEvent.setId(nextEventId++);
-
-                
-
-                std::string errorMsg;
-
-                if (dataManager.getUser().getCourses().addEventSafely(newEvent, errorMsg)) {
-
-                    successCount++;
-
-                } else {
-
-                    skipCount++;
-
-                    // 回滚ID计数
-
-                    nextEventId--;
-
-                }
-
+            if (events.empty()) {
+                QMessageBox::warning(this, QString::fromUtf8(u8"导入提示"),
+                                     QString::fromUtf8(u8"文件为空或没有有效事件，未导入任何内容"));
+                return;
             }
-
-            
-
+            int importedCourseCount = 0;
+            int importedPersonalCount = 0;
+            int skipCount = 0;
+            for (const auto& event : events) {
+                ScheduleEvent newEvent = event;
+                newEvent.setId(nextEventId++);
+                TimeSlot slot = newEvent.getTimeSlot();
+                auto start_t = std::chrono::system_clock::to_time_t(slot.getStartTime());
+                auto end_t = std::chrono::system_clock::to_time_t(slot.getEndTime());
+                if (start_t == 0 || end_t == 0 || slot.getEndTime() <= slot.getStartTime()) {
+                    skipCount++;
+                    nextEventId--;
+                    continue;
+                }
+                QDateTime startDt = QDateTime::fromSecsSinceEpoch(start_t);
+                QDateTime endDt   = QDateTime::fromSecsSinceEpoch(end_t);
+                if (startDt.date() != endDt.date()) {
+                    skipCount++;
+                    nextEventId--;
+                    continue;
+                }
+                bool ok = false;
+                std::string errorMsg;
+                if (slot.getIsCourse()) {
+                    ok = dataManager.getUser().getCourses().addEventSafely(newEvent, errorMsg);
+                    if (ok) { importedCourseCount++; }
+                } else {
+                    bool conflictWithCourses = false;
+                    const int newWeekday = newEvent.getWeekday();
+                    for (const auto& c : dataManager.getUser().getCourses().getAllEvents()) {
+                        if (c.getWeekday() != newWeekday) continue;
+                        TimeSlot existing = c.getTimeSlot();
+                        if (existing.getEndTime() <= existing.getStartTime()) {
+                            existing.setEndTime(existing.getStartTime() + std::chrono::minutes(1));
+                        }
+                        if (slot.isOverlappingWith(existing)) { conflictWithCourses = true; break; }
+                    }
+                    if (!conflictWithCourses) {
+                        ok = dataManager.getUser().getPersonalSchedule().addEventSafely(newEvent, errorMsg);
+                        if (ok) { importedPersonalCount++; }
+                    }
+                }
+                if (!ok) {
+                    skipCount++;
+                    nextEventId--;
+                }
+            }
             updateScheduleView();
-
             saveData();
-
-            
-
-                        QMessageBox::information(this, QString::fromUtf8(u8"导入结果"),
-
-                                                                      QString::fromUtf8(u8"成功导入 %1 个课程事件，跳过 %2 个冲突或重复事件")
-
-                                   .arg(successCount).arg(skipCount));
+            QMessageBox::information(this, QString::fromUtf8(u8"导入结果"),
+                                     QString::fromUtf8(u8"成功导入 课程事件 %1 个、个人事件 %2 个；跳过 %3 个（冲突/重复/无效时间/跨天）")
+                                     .arg(importedCourseCount).arg(importedPersonalCount).arg(skipCount));
 
             
 
         } catch (const std::exception& e) {
-
-                        QMessageBox::critical(this, QString::fromUtf8(u8"导入错误"),
-
-                                                                QString::fromUtf8(u8"导入失败: %1").arg(e.what()));
-
+                        QMessageBox::warning(this, QString::fromUtf8(u8"导入错误"),
+                                             QString::fromUtf8(u8"CSV格式不正确或内容异常(空文件/缺列/非法时间），导入已取消"));
         }
 
     }
@@ -535,17 +543,20 @@ void MainWindow::on_importProfessorBtn_clicked() {
             try {
 
                 std::vector<Professor> professors = FileParser::parseProfessorsCsv(filePath.toStdString());
-
-                
+                std::vector<Professor> filtered;
+                filtered.reserve(professors.size());
+                for (const auto& p : professors) {
+                    if (!p.getOfficeHours().getAllEvents().empty()) {
+                        filtered.push_back(p);
+                    }
+                }
+                int skippedProfCount = static_cast<int>(professors.size() - filtered.size());
+                professors.swap(filtered);
 
                 if (professors.empty()) {
-
                                         QMessageBox::warning(this, QString::fromUtf8(u8"导入失败"),
-
-                                                                              QString::fromUtf8(u8"未能从文件中读取教师数据"));
-
+                                                                              QString::fromUtf8(u8"未能从文件中读取有效教师办公时间"));
                     return;
-
                 }
 
                 
@@ -558,11 +569,16 @@ void MainWindow::on_importProfessorBtn_clicked() {
 
                 // 调用 saveData 保存教师数据到 data_storage
 
-                if (changed) {
-
-                    saveData();
-
+                int officeCount = 0;
+                for (const auto& p : professors) {
+                    officeCount += static_cast<int>(p.getOfficeHours().getAllEvents().size());
                 }
+                if (changed) {
+                    saveData();
+                }
+                QMessageBox::information(this, QString::fromUtf8(u8"导入结果"),
+                                         QString::fromUtf8(u8"成功导入 有效教师时间 %1 条；跳过 %2 位教师（无有效办公时间）")
+                                         .arg(officeCount).arg(skippedProfCount));
 
             } catch (const std::exception& e) {
 
@@ -1150,13 +1166,3 @@ void MainWindow::on_clearHolidaysAction_triggered() {
     QMessageBox::information(this, QString::fromUtf8(u8"清理完成"),
                              QString::fromUtf8(u8"已删除旧假期事件 %1 条").arg(static_cast<int>(toRemove.size())));
 }
-
-
-
-
-
-
-
-
-
-
