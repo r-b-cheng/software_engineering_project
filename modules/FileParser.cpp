@@ -6,6 +6,17 @@
 #include <algorithm>
 #include <regex>
 
+// 静态辅助函数：去除首尾空格、CR、引号
+static void trim(std::string& s) {
+    auto not_space = [](unsigned char ch){ return !std::isspace(ch); };
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), not_space));
+    s.erase(std::find_if(s.rbegin(), s.rend(), not_space).base(), s.end());
+    // 去除两端引号（如果存在）
+    if (s.size() >= 2 && s.front() == '"' && s.back() == '"') {
+        s = s.substr(1, s.size() - 2);
+    }
+}
+
 Schedule FileParser::parseCsv(const std::string& filePath) {
     Schedule schedule;
     std::ifstream file(filePath);
@@ -20,6 +31,7 @@ Schedule FileParser::parseCsv(const std::string& filePath) {
 
     int eventId = 1;
     while (std::getline(file, line)) {
+        trim(line);
         if (line.empty()) continue;
 
         std::istringstream iss(line);
@@ -32,6 +44,9 @@ Schedule FileParser::parseCsv(const std::string& filePath) {
         std::getline(iss, startTimeStr, ',');
         std::getline(iss, endTimeStr, ',');
         std::getline(iss, isCourseStr, ',');
+
+        trim(name); trim(location); trim(description); trim(weekdayStr);
+        trim(startTimeStr); trim(endTimeStr); trim(isCourseStr);
 
         if (!name.empty()) {
             // 解析时间（假设格式为 YYYY-MM-DD HH:MM）
@@ -82,6 +97,7 @@ std::vector<Professor> FileParser::parseProfessorsCsv(const std::string& filePat
     int eventId = 1;
 
     while (std::getline(file, line)) {
+        trim(line);
         if (line.empty()) continue;
 
         std::istringstream iss(line);
@@ -96,16 +112,6 @@ std::vector<Professor> FileParser::parseProfessorsCsv(const std::string& filePat
         std::getline(iss, startTimeStr, ',');
         std::getline(iss, endTimeStr, ',');
 
-
-        //删除多余的空格
-        auto trim = [](std::string& s) {
-            auto not_space = [](unsigned char ch){ return !std::isspace(ch); };
-            s.erase(s.begin(), std::find_if(s.begin(), s.end(), not_space));
-            s.erase(std::find_if(s.rbegin(), s.rend(), not_space).base(), s.end());
-            if (!s.empty() && s.front()=='"' && s.back()=='"') {
-                s = s.substr(1, s.size()-2);
-            }
-        };
         trim(profName); trim(profEmail); trim(eventName); trim(location);
         trim(description); trim(weekdayStr); trim(startTimeStr); trim(endTimeStr);
 
@@ -200,6 +206,7 @@ std::vector<ScheduleEvent> FileParser::parseIcsHolidays(const std::string& icsCo
     };
 
     while (std::getline(ss, line)) {
+        trim(line);
         if (line.rfind("BEGIN:VEVENT", 0) == 0) {
             inEvent = true; dtstart.clear(); dtend.clear(); summary.clear();
         } else if (line.rfind("END:VEVENT", 0) == 0) {
