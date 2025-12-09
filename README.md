@@ -89,18 +89,18 @@ project/
 #### Qt Creator（recommended）
 
 1. Open Qt Creator
-[![Open Qt Creator](installation\step1-QtWindow.jpg)]
+![Open Qt Creator](installation/step1-QtWindow.jpg)
 
 2. Drag the file `ScheduleManager.pro` into the Qt Creator window
-[![Drag .pro into Qt Creator](installation\step2-OpenFile.png)]
+![Drag .pro into Qt Creator](installation/step2-OpenFile.png)
 
 3. Click the “run” button
 Click the "Run" button
-[![Click Run]("installation\step3-Run.png)]
+![Click Run](installation/step3-Run.png)
 
 4. The management system project will pop up as a window.
 The management system window will pop up
-[![Program Window](installation\step4-PoppedWinodw.png)]
+![Program Window](installation/step4-PoppedWinodw.png)
 
 #### cmd
 
@@ -131,13 +131,13 @@ bin\ScheduleManager.exe  # Windows
    - Start and end time
    - If it is a course (check "Course/Office Hours")
 3. Click "OK" to save
-[![image](usage\add_event.png)]
+![image](usage/add_event.png)
 
 ### 2. Delete Events
 
 1. Click the icon with the left mouse button
 2. Click "Delete the Event"
-[![image](usage\delete_event.png)]
+![image](usage/delete_event.png)
 
 
 ### 3. Add Teacher Schedule
@@ -146,7 +146,7 @@ bin\ScheduleManager.exe  # Windows
 2. Click the "Import Teacher Time" button on the toolbar
 3. Select the CSV file
 4. Click "Import"
-[![image](usage\add_teacherschedule.png)]
+![image](usage/add_teacherschedule.png)
 
 
 ### 4. Add Student Schedule
@@ -155,7 +155,7 @@ bin\ScheduleManager.exe  # Windows
 2. Click the "Import Student Courses" button on the toolbar
 3. Select the CSV file
 4. Click "Import"
-[![image](usage\add_studentschedule.png)]
+![image](usage/add_studentschedule.png)
 
 ### 5. Calculate Available Time Slots
 
@@ -163,7 +163,7 @@ bin\ScheduleManager.exe  # Windows
 2. Select a teacher from the drop-down list
 3. The system will automatically calculate and display all available meeting time slots
 4. The result window will show the teacher's contact information and a list of available times
-[![image](usage\calculate_timeslots.png)]
+![image](usage/calculate_timeslots.png)
 
 ### 5. Detect events 
 
@@ -171,13 +171,13 @@ bin\ScheduleManager.exe  # Windows
 2. Courses are shown with a light blue background.
 3. Personal schedules are shown with a light yellow background
 4. Use the "Previous Week" / "Next Week" buttons to switch the weekly view
-[![image](usage\detect_event.png)]
+![image](usage/detect_event.png)
 
 ### 6. Modify the tag of the events
 1. Double-click an event to modify detailed information
 2. In the dialog box, you can modify the event name, location, description, day of week, start time, end time, and whether it is a course
 3. Click "OK" to save the modifications
-[![image](usage\view_and_modify.png)]
+![image](usage/view_and_modify.png)
 
 
 
@@ -260,4 +260,3 @@ If you have any questions or suggestions, please contact the development team.
 ---
 
 **Happy use of the scheduling system!**
-
