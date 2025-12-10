@@ -1,5 +1,5 @@
 # Student Schedule Management System (Schedule Manager)
-
+[Download the setup file](setup.exe)
 ## Project Introduction
 The “Muster’s Calendar” is a desktop application developed based on Qt5/C++ and designed specifically for student groups. 
 
